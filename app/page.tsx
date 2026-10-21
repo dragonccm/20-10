@@ -23,7 +23,7 @@ export default function Home() {
     <div>
       <div className="message-text">
         <p>
-          20/10, chúc Ngọc Maii dangiu luôn thật hạnh phúc và nhiều năng lượng nhé, cùng anh đón chờ nhiều
+          20/10, chúc Thúy Ngân dangiu luôn thật hạnh phúc và nhiều năng lượng nhé, cùng anh đón chờ nhiều
           điều mới mẻ hơn ở phía trước nheee cô bé xinh đẹp của anh!
         </p>
       </div>
@@ -31,31 +31,31 @@ export default function Home() {
       <div className="floating-bubbles">
         <div className="bubble bubble-1" onClick={handleClick}>
           <img
-            src="/images/design-mode/image(1).png"
+            src="/photos/photo_1.jpg"
             alt="Memory 1"
           />
         </div>
         <div className="bubble bubble-2" onClick={handleClick}>
           <img
-            src="/images/design-mode/image(1).png"
+            src="/photos/photo_2.jpg"
             alt="Memory 2"
           />
         </div>
         <div className="bubble bubble-3" onClick={handleClick}>
           <img
-            src="/images/design-mode/image(1).png"
+            src="/photos/photo_3.jpg"
             alt="Memory 3"
           />
         </div>
         <div className="bubble bubble-4" onClick={handleClick}>
           <img
-            src="/images/design-mode/image(1).png"
+            src="/photos/photo_4.jpg"
             alt="Memory 4"
           />
         </div>
         <div className="bubble bubble-5" onClick={handleClick}>
           <img
-            src="/images/design-mode/image(1).png"
+            src="/photos/photo_5.jpg"
             alt="Memory 5"
           />
         </div>

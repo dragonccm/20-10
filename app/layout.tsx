@@ -11,7 +11,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 const _cookie = Cookie({ weight: "400", subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Ngọc Mai App",
+  title: "Thúy Ngân App",
   description: "Created with Ngọc Long",
   generator: "Ngọc Long",
 }
