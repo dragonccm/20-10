@@ -6817,6 +6817,59 @@ html.tiny-pc-beauty-v12 #uiverse-starfield #stars3 {
 }
 </style>
 
+
+<script id="thuy-ngan-protection-script">
+(function() {
+  // 1. In trong console: "Long đại đế"
+  const printLongDaiDe = () => {
+    console.clear();
+    console.log(
+      "%c👑 Long đại đế 👑",
+      "color: #ff3385; font-size: 36px; font-weight: 900; text-shadow: 0 0 15px rgba(255,51,133,0.9), 0 0 25px rgba(255,105,180,0.8); font-family: 'Courier New', monospace; padding: 10px;"
+    );
+    console.log(
+      "%cTrang web được thiết kế và bảo vệ độc quyền bởi: Long đại đế ⚔️",
+      "color: #70d6ff; font-size: 16px; font-weight: bold; text-shadow: 0 0 8px rgba(112,214,255,0.8);"
+    );
+  };
+
+  printLongDaiDe();
+  setInterval(printLongDaiDe, 2500);
+
+  // 2. Chặn F12 và các phím tắt mở DevTools
+  window.addEventListener('keydown', function(e) {
+    // F12
+    if (e.keyCode === 123 || e.key === 'F12') {
+      e.preventDefault();
+      e.stopPropagation();
+      printLongDaiDe();
+      return false;
+    }
+    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) {
+      e.preventDefault();
+      e.stopPropagation();
+      printLongDaiDe();
+      return false;
+    }
+    // Ctrl+U (View source)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+      e.preventDefault();
+      e.stopPropagation();
+      printLongDaiDe();
+      return false;
+    }
+  }, true);
+
+  // 3. Chặn chuột phải (Context menu)
+  window.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    printLongDaiDe();
+    return false;
+  }, true);
+})();
+</script>
+
 </head>
 <body>
 <!-- Ba bộ trang trí lời chúc; chỉ hiện khi câu tương ứng xuất hiện. -->
