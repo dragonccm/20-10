@@ -10359,7 +10359,7 @@ const SPRITES = [taoSprite(1.02, 140), taoSprite(.96, 136), taoSprite(1.08, 145)
 <!-- Animation nhắc Thúy Ngân chạm vào màn hình để chuyển cảnh -->
 <div id="thuy-ngan-tap-hint" class="thuy-ngan-tap-prompt">
   <div class="tap-hand">👆</div>
-  <div class="tap-text">chạm vào màn hình để xem tiếp nheee ✨</div>
+  <div class="tap-text">✨ Tự động chuyển cảnh • Chạm để qua nhanh ✨</div>
   <div class="tap-ring"></div>
 </div>
 
@@ -10378,6 +10378,68 @@ const SPRITES = [taoSprite(1.02, 140), taoSprite(.96, 136), taoSprite(1.08, 145)
 
   window.addEventListener('click', flashHint, true);
   window.addEventListener('touchstart', flashHint, { passive: true, capture: true });
+})();
+</script>
+
+
+<script id="thuy-ngan-autoplay-engine">
+(function() {
+  let autoTimer = null;
+  const sceneDurations = [
+    2800, // 0: text-1 ("Thúy Ngân ơi")
+    3000, // 1: text-2 ("tớ là Tiny")
+    3500, // 2: text-3 ("Hôm nay tớ nhận lệnh từ anh Ngọc Long...")
+    3800, // 3: text-4 ("ui Thúy Ngân đẹp quá ✨")
+    4200, // 4: text-5 ("à thì hôm nay là 20/10")
+    3200, // 5: text-6 ("nên là tớ muốn")
+    4500, // 6: text-7 ("chúc Thúy Ngân thật nhiều sức khỏe...")
+    4800, // 7: text-8 ("chúc Thúy Ngân thật xinh đẹp rạng rỡ...")
+    4800, // 8: text-9 ("và chúc Thúy Ngân luôn giữ nụ cười trên môi...")
+    3800, // 9: text-10 ("tớ tặng Thúy Ngân ngọn cỏ 4 lá này")
+    3500, // 10: text-11 ("nè cầm lấy đi")
+    4000, // 11: text-12 ("chúc Thúy Ngân gặp được thật nhiều điều may mắn")
+    3800, // 12: text-13 ("liệu Thúy Ngân có thể?") -> sang share-flight-scene
+  ];
+
+  function scheduleNextAutoStep() {
+    clearTimeout(autoTimer);
+    
+    // Nếu chưa đến cảnh cuối (clickCount <= 12)
+    if (typeof clickCount !== 'undefined' && clickCount <= 12) {
+      const delay = sceneDurations[clickCount] || 4000;
+      autoTimer = setTimeout(() => {
+        if (typeof chuyenCanh === 'function' && clickCount <= 12) {
+          chuyenCanh();
+          scheduleNextAutoStep();
+        }
+      }, delay);
+    } else if (typeof clickCount !== 'undefined' && clickCount > 12) {
+      // Ở cảnh nhắn tin: tự động kích hoạt nút sau 5 giây nếu người dùng chưa bấm
+      autoTimer = setTimeout(() => {
+        const btn = document.getElementById('share-fuel-button');
+        if (btn && !btn.disabled && typeof shareFuelStarted !== 'undefined' && !shareFuelStarted) {
+          btn.click();
+        }
+      }, 5000);
+    }
+  }
+
+  // Khởi động tự chạy ngay khi trang tải xong
+  window.addEventListener('load', () => {
+    scheduleNextAutoStep();
+  });
+
+  // Nếu người dùng chủ động chạm/click, reset timer và đếm tiếp
+  function resetAndAdvance() {
+    clearTimeout(autoTimer);
+    setTimeout(scheduleNextAutoStep, 300);
+  }
+
+  window.addEventListener('click', resetAndAdvance, true);
+  window.addEventListener('touchstart', resetAndAdvance, { passive: true, capture: true });
+
+  // Khởi chạy ngay lập tức phòng trường hợp DOMContentLoaded đã qua
+  setTimeout(scheduleNextAutoStep, 1500);
 })();
 </script>
 
