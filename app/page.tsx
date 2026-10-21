@@ -214,7 +214,7 @@ export default function Home() {
 
   return (
     <div 
-      className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-[#090514] via-[#160a29] to-[#250d35] text-rose-50 selection:bg-rose-500 selection:text-white"
+      className="relative min-h-screen w-full flex flex-col items-center justify-start overflow-x-hidden bg-gradient-to-b from-[#090514] via-[#160a29] to-[#250d35] text-rose-50 selection:bg-rose-500 selection:text-white"
       onClick={triggerBurst}
     >
       {/* Background Petals Canvas */}
@@ -267,7 +267,7 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 text-center">
+      <main className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 flex flex-col items-center text-center">
         
         {/* Hero Section */}
         <div className="space-y-6 max-w-3xl mx-auto pt-6">
