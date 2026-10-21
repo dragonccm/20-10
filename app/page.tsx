@@ -248,55 +248,26 @@ export default function Home() {
         </div>
       ))}
 
-      {/* Top Floating Controls */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-6 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/20 border border-rose-300/30 shadow-[0_0_15px_rgba(244,63,94,0.3)] backdrop-blur-md">
-            <Flower2 className="h-5 w-5 text-rose-300 animate-spin-slow" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold tracking-wide text-rose-200 uppercase">20 • 10 • 2026</h2>
-            <p className="text-xs text-rose-400/80">Happy Vietnamese Women's Day</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleMusic()
-            }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-950/60 border border-rose-500/30 text-rose-200 hover:bg-rose-900/60 transition-all text-xs shadow-lg backdrop-blur-md hover:scale-105 active:scale-95 cursor-pointer"
-            title="Bật/Tắt nhạc nền du dương"
-          >
-            {isPlayingMusic ? (
-              <>
-                <Volume2 className="h-4 w-4 text-pink-400 animate-pulse" />
-                <span className="hidden sm:inline">Tắt nhạc</span>
-              </>
-            ) : (
-              <>
-                <VolumeX className="h-4 w-4 text-rose-400/60" />
-                <span className="hidden sm:inline">Phát nhạc lãng mạn</span>
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowLetter(true)
-            }}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium text-xs shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:brightness-110 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <Gift className="h-4 w-4 animate-bounce" />
-            <span>Mở Hộp Thư 💌</span>
-          </button>
-        </div>
-      </header>
+      {/* Floating Music Button */}
+      <div className="fixed top-4 right-4 z-40">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleMusic()
+          }}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-950/70 border border-rose-500/30 text-rose-200 hover:bg-rose-900/80 shadow-lg backdrop-blur-md transition-all hover:scale-110 active:scale-95 cursor-pointer"
+          title={isPlayingMusic ? "Tắt nhạc" : "Bật nhạc lãng mạn"}
+        >
+          {isPlayingMusic ? (
+            <Volume2 className="h-5 w-5 text-pink-400 animate-pulse" />
+          ) : (
+            <VolumeX className="h-5 w-5 text-rose-400/70" />
+          )}
+        </button>
+      </div>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-24 text-center">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 text-center">
         
         {/* Hero Section */}
         <div className="space-y-6 max-w-3xl mx-auto pt-6">
