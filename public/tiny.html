@@ -5180,6 +5180,9 @@ body.question-scene-body { background: #000; }
 .reality-underscript {z-index:5;color:rgba(204,239,255,.72);letter-spacing:.11em;text-align:center;font:500 clamp(12px,1.1vw,15px)/1.7 system-ui,sans-serif;
  opacity:0;transform:translateY(10px);transition:opacity 1.1s ease .6s,transform 1.1s ease .6s;margin:18px 0 0;}
 #tiny-reality-scene.reality-cute .reality-underscript {opacity:1;transform:translateY(0);}
+.reality-underscript.reality-heart-note {position:absolute;top:clamp(14px,4.5vh,44px);left:50%;margin:0;width:min(88vw,640px);max-width:none;color:rgba(255,214,236,.86);letter-spacing:.02em;font-style:italic;font-size:clamp(12.5px,1.05vw,16px);line-height:1.7;text-shadow:0 0 14px rgba(255,146,204,.35);transform:translate(-50%,10px);transition:opacity 1.6s ease 2.4s,transform 1.6s ease 2.4s;}
+#tiny-reality-scene.reality-cute .reality-underscript.reality-heart-note {transform:translate(-50%,0);}
+@media(max-height:590px){.reality-underscript.reality-heart-note {top:8px;font-size:11.5px;line-height:1.5;width:min(94vw,760px);}}
 .reality-heart-float {position:absolute;z-index:2;color:rgba(255,184,224,.8);opacity:0;font-size:clamp(22px,3vw,43px);text-shadow:0 0 22px #ff96c6;animation:realityHearts 6s ease-in-out infinite alternate;}
 #tiny-reality-scene.reality-cute .reality-heart-float {opacity:.73;}
 .reality-heart-float.one {left:14%;top:34%;animation-delay:-2s;}
@@ -7281,6 +7284,7 @@ html.tiny-pc-beauty-v12 #uiverse-starfield #stars3 {
         <div id="tiny-reality-eye-host" aria-hidden="true"></div>
       </div>
       <h2 class="reality-message">và giúp tớ <span class="reality-pink">bước ra ngoài đời thực</span> được chứ?</h2>
+      <p class="reality-underscript reality-heart-note">Anh n&#243;i th&#7853;t l&#242;ng m&#7897;t ch&#250;t nha, anh th&#237;ch b&#233; th&#7853;t &#273;&#243; :)) Anh bi&#7871;t th&#7901;i gian qua c&#243; l&#250;c anh h&#417;i nhi&#7879;t t&#236;nh qu&#225;, n&#234;n n&#7871;u c&#243; v&#244; t&#236;nh l&#224;m b&#233; kh&#243; x&#7917; th&#236; anh xin l&#7895;i nha. Anh kh&#244;ng n&#243;i &#273;i&#7873;u n&#224;y &#273;&#7875; b&#233; ph&#7843;i tr&#7843; l&#7901;i g&#236; &#273;&#226;u, ch&#7881; l&#224; anh mu&#7889;n th&#224;nh th&#7853;t v&#7899;i c&#7843;m x&#250;c c&#7911;a m&#236;nh th&#244;i. Anh th&#7853;t s&#7921; r&#7845;t vui v&#236; &#273;&#432;&#7907;c quen Ng&#226;n.</p>
       <div class="reality-moon-walk" aria-hidden="true">
   <svg class="moon-landscape" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax slice">
     <defs>
