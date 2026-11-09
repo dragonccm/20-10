@@ -6,13 +6,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  async rewrites() {
-    return [
-      {
-        source: '/',
-        destination: '/tiny.html',
-      },
-    ]
+  webpack(config, { isServer, webpack }) {
+    if (!isServer) {
+      // PptxGenJS uses these modules only for Node file and network operations.
+      config.plugins.push(new webpack.NormalModuleReplacementPlugin(/^node:(fs|https)$/, (resource) => {
+        if (resource.context.includes("pptxgenjs")) resource.request = resource.request.slice(5)
+      }))
+    }
+    return config
   },
 }
 
