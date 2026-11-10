@@ -205,6 +205,7 @@ export default function CreativePage() {
   const aiImgRef = useRef<HTMLInputElement>(null)
   const deckRef = useRef<HTMLInputElement>(null)
   const [deckBusy, setDeckBusy] = useState("")
+  const [urlInput, setUrlInput] = useState("")
   const [exportingDeck, setExportingDeck] = useState(false)
   const [presenting, setPresenting] = useState(false)
   const [, setHistTick] = useState(0)
@@ -323,6 +324,43 @@ export default function CreativePage() {
       toast.success(`Đã nhập ${news.length} ${kind === "pptx" ? "slide" : "trang"} thành thiết kế sửa được.`)
     } catch (e) {
       toast.error((e as Error).message)
+    } finally {
+      setDeckBusy("")
+    }
+  }
+
+  const importDeckFromUrl = async (url: string) => {
+    if (!url.trim()) return toast.error("Vui lòng nhập đường link URL của file slide.")
+    setDeckBusy("Đang kết nối và tải tệp từ liên kết...")
+    try {
+      const res = await fetch("/api/fetch-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Tải tệp thất bại (${res.status})`)
+      }
+      const disposition = res.headers.get("content-disposition") || ""
+      let fileName = "downloaded-presentation.pptx"
+      const match = disposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?/i)
+      if (match && match[1]) fileName = decodeURIComponent(match[1])
+      else {
+        const urlSeg = url.split("?")[0].split("/").pop()
+        if (urlSeg) fileName = decodeURIComponent(urlSeg)
+      }
+      const blob = await res.blob()
+      setDeckBusy("Đang bóc tách slide và đồ họa...")
+      const kind = fileKind(fileName, blob.type) || "pptx"
+      const news = await documentToDesigns(blob, fileName, kind, setDeckBusy)
+      if (!news.length) throw new Error("Không tìm thấy slide nào trong tệp này.")
+      const deck = { id: uid(), name: fileName.replace(/\.[^.]+$/, "") }
+      openDeck(news.map((page) => ({ ...page, deck })))
+      toast.success(`Đã tự động tải và nhập ${news.length} slide từ liên kết!`)
+      setUrlInput("")
+    } catch (e) {
+      toast.error((e as Error).message || "Không thể tải tệp từ liên kết này.")
     } finally {
       setDeckBusy("")
     }
@@ -1053,26 +1091,86 @@ export default function CreativePage() {
 
           )}
           {libraryTab === "import" && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50/70 p-4 ring-1 ring-amber-100">
-            <Presentation className="h-5 w-5 shrink-0 text-amber-600" />
-            <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-slate-800">Nhập slide có sẵn</h3>
-              <p className="text-xs text-slate-500">{deckBusy || "PowerPoint (.pptx): mỗi slide thành thiết kế sửa được chữ, ảnh, màu. PDF: mỗi trang thành ảnh nền để thêm chữ, sticker."}</p>
+          <div className="mt-3 space-y-4">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50/70 p-4 ring-1 ring-amber-100">
+              <Presentation className="h-5 w-5 shrink-0 text-amber-600" />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-slate-800">Cách 1: Tải lên tệp từ máy tính</h3>
+                <p className="text-xs text-slate-500">{deckBusy || "PowerPoint (.pptx): mỗi slide thành thiết kế sửa được chữ, ảnh, màu. PDF: mỗi trang thành ảnh nền để thêm chữ, sticker."}</p>
+              </div>
+              <input
+                ref={deckRef}
+                type="file"
+                accept=".pptx,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) importDeck(f)
+                  e.target.value = ""
+                }}
+              />
+              <Button variant="outline" icon={FileUp} loading={!!deckBusy} onClick={() => deckRef.current?.click()}>
+                Chọn tệp PPTX / PDF
+              </Button>
             </div>
-            <input
-              ref={deckRef}
-              type="file"
-              accept=".pptx,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) importDeck(f)
-                e.target.value = ""
-              }}
-            />
-            <Button variant="outline" icon={FileUp} loading={!!deckBusy} onClick={() => deckRef.current?.click()}>
-              Chọn tệp PPTX / PDF
-            </Button>
+
+            <div className="rounded-2xl bg-gradient-to-br from-blue-50/70 via-indigo-50/50 to-violet-50/50 p-4 ring-1 ring-blue-200 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">2</span>
+                <h3 className="font-semibold text-slate-800">Cách 2: Tự động tải từ link URL</h3>
+              </div>
+              <p className="mt-1 text-xs text-slate-600">
+                Dán đường link tải tệp .pptx từ các kho trực tuyến (SlidesCarnival, Google Drive công khai, CDN...). Hệ thống sẽ tự động kết nối, tải về và mở ngay trong Studio.
+              </p>
+
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <Input
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="https://www.slidescarnival.com/download/.../pptx"
+                  className="flex-1 bg-white"
+                  disabled={!!deckBusy}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && urlInput.trim()) importDeckFromUrl(urlInput)
+                  }}
+                />
+                <Button
+                  variant="primary"
+                  loading={!!deckBusy}
+                  disabled={!urlInput.trim()}
+                  onClick={() => importDeckFromUrl(urlInput)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
+                >
+                  Tải & Mở slide
+                </Button>
+              </div>
+
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-slate-500 font-medium">Link mẫu thử nghiệm:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const u = "https://www.slidescarnival.com/download/sc04739/history-report-presentation/pptx"
+                    setUrlInput(u)
+                    importDeckFromUrl(u)
+                  }}
+                  className="rounded-full bg-white px-2.5 py-0.5 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 transition"
+                >
+                  Báo cáo Lịch sử (SlidesCarnival)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const u = "https://www.slidescarnival.com/download/sc04733/marketing-campaign-analysis-report-presentation/pptx"
+                    setUrlInput(u)
+                    importDeckFromUrl(u)
+                  }}
+                  className="rounded-full bg-white px-2.5 py-0.5 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 transition"
+                >
+                  Phân tích Marketing (SlidesCarnival)
+                </button>
+              </div>
+            </div>
           </div>
 
           )}
