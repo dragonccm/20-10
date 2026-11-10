@@ -77,19 +77,21 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "korean",
-    name: "Học tiếng Hàn",
-    short: "Tiếng Hàn",
-    desc: "Ôn từ vựng mỗi ngày bằng thẻ lật, nghe phát âm, bảng tiểu từ và AI sửa câu tiếng Hàn.",
+    name: "Học ngoại ngữ (Hàn & Anh)",
+    short: "Ngoại ngữ",
+    desc: "Ôn từ vựng tiếng Hàn & tiếng Anh học thuật Cambridge AWL bằng thẻ lặp lại ngắt quãng, nghe phát âm và AI kiểm tra câu.",
     icon: Languages,
     tint: "bg-violet-100 text-violet-600",
     guide: {
       id: "korean",
       steps: [
-        "Tab Ôn tập: mỗi ngày ôn các thẻ đến hạn. Bấm thẻ để lật, rồi chọn Quên, Khó, Nhớ hoặc Dễ.",
-        "Tab Bộ thẻ: thêm từ mới, hoặc chụp ảnh trang sách để AI tự lấy từ vựng.",
-        "Tab Kiểm tra câu: viết câu tiếng Hàn, AI sửa và giải thích tiểu từ, ngữ pháp.",
+        "Chuyển đổi linh hoạt giữa Tiếng Hàn 🇰🇷 và Tiếng Anh 🇬🇧 (Cambridge AWL) ở thanh chọn trên cùng.",
+        "Tab Ôn tập: mỗi ngày ôn các thẻ đến hạn. Bấm thẻ để lật, nghe phát âm rồi chọn mức độ nhớ.",
+        "Tab Bộ thẻ: thêm từ mới hoặc tra cứu kho từ học thuật cốt lõi chuẩn Cambridge.",
+        "Tab Ngữ pháp / Collocations: bảng tiểu từ tiếng Hàn và cụm từ học thuật tiếng Anh.",
+        "Tab Kiểm tra câu: AI sửa và phân tích ngữ pháp, văn phong học thuật chi tiết.",
       ],
-      tip: "Thẻ nhớ tốt sẽ giãn dần 1, 2, 4, 7... ngày. Chỉ cần ôn đều mỗi ngày một ít.",
+      tip: "Thẻ nhớ tốt sẽ giãn dần 1, 2, 4, 7... ngày theo thuật toán lặp lại ngắt quãng. Học đều mỗi ngày một ít.",
     },
   },
   {

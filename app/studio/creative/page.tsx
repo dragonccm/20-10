@@ -56,6 +56,15 @@ import { callAi } from "@/lib/studio/ai"
 import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studio/bgremove"
 import { cn } from "@/lib/utils"
 import { createSlideSet, slideSetPage, SLIDE_SETS } from "@/lib/studio/design"
+import {
+  checkImageServerStatus,
+  generateImageTask,
+  fetchImageAsDataUrl,
+  PROMPT_PRESETS,
+  ASPECT_RATIOS as AI_ASPECT_RATIOS,
+  type AspectRatio as AiAspectRatio,
+  type ImageServerStatus,
+} from "@/lib/studio/imagegen"
 
 const tool = TOOLS.find((t) => t.slug === "creative")!
 
@@ -168,7 +177,16 @@ export default function CreativePage() {
   const [draggedLayer, setDraggedLayer] = useState<string | null>(null)
   const [layerTarget, setLayerTarget] = useState<{ id: string; above: boolean } | null>(null)
   const [showNew, setShowNew] = useState(false)
-  const [libraryTab, setLibraryTab] = useState<"slides" | "single" | "ai" | "import">("slides")
+  const [libraryTab, setLibraryTab] = useState<"slides" | "single" | "ai" | "imagegen" | "import">("slides")
+  const [showImageGenModal, setShowImageGenModal] = useState(false)
+  const [imageGenPrompt, setImageGenPrompt] = useState("")
+  const [imageGenAspect, setImageGenAspect] = useState<AiAspectRatio>("1:1")
+  const [imageGenLoading, setImageGenLoading] = useState(false)
+  const [imageGenProgress, setImageGenProgress] = useState(0)
+  const [imageGenResult, setImageGenResult] = useState<string | null>(null)
+  const [imageGenResultDataUrl, setImageGenResultDataUrl] = useState<string | null>(null)
+  const [imageServerStatus, setImageServerStatus] = useState<ImageServerStatus | null>(null)
+  const [imageServerChecking, setImageServerChecking] = useState(false)
   const [scale, setScale] = useState(0.4)
   const [guides, setGuides] = useState<Guides>({ v: [], h: [] })
   const [cropping, setCropping] = useState<El | null>(null)
@@ -540,6 +558,79 @@ export default function CreativePage() {
     }
   }
 
+  const refreshImageServer = useCallback(async () => {
+    setImageServerChecking(true)
+    const s = await checkImageServerStatus()
+    setImageServerStatus(s)
+    setImageServerChecking(false)
+  }, [])
+
+  const handleGenerateAiImage = async () => {
+    if (!imageGenPrompt.trim()) return toast.error("Vui lòng nhập mô tả bức ảnh.")
+    setImageGenLoading(true)
+    setImageGenProgress(10)
+    setImageGenResult(null)
+    setImageGenResultDataUrl(null)
+    try {
+      const url = await generateImageTask(imageGenPrompt, imageGenAspect, (p) => {
+        setImageGenProgress(p.progress)
+      })
+      setImageGenResult(url)
+      try {
+        const dataUrl = await fetchImageAsDataUrl(url)
+        setImageGenResultDataUrl(dataUrl)
+      } catch {
+        setImageGenResultDataUrl(url)
+      }
+      toast.success("Tạo ảnh thành công!")
+    } catch (e: any) {
+      toast.error(e.message || "Tạo ảnh thất bại.")
+    } finally {
+      setImageGenLoading(false)
+    }
+  }
+
+  const handleInsertAiImage = async (asSticker: boolean) => {
+    const src = imageGenResultDataUrl || imageGenResult
+    if (!src || !cur) return
+    try {
+      let finalSrc = src
+      let finalCutout = false
+      if (asSticker) {
+        toast.info("Đang tách nền ảnh thành sticker...")
+        const cut = await removeBackgroundAI(src, setBgStatus)
+        finalSrc = cut.src
+        finalCutout = true
+      }
+      const img = await loadImg(finalSrc)
+      const maxW = cur.w * 0.6
+      const maxH = cur.h * 0.6
+      const s = Math.min(1, maxW / img.w, maxH / img.h)
+      const w = Math.round(img.w * s)
+      const h = Math.round(img.h * s)
+      const x = Math.round((cur.w - w) / 2)
+      const y = Math.round((cur.h - h) / 2)
+      addEl({
+        id: uid(),
+        type: "image",
+        x,
+        y,
+        w,
+        h,
+        opacity: 1,
+        radius: 0,
+        src: finalSrc,
+        nw: img.w,
+        nh: img.h,
+        cutout: finalCutout || undefined,
+      })
+      setShowImageGenModal(false)
+      toast.success(asSticker ? "Đã chèn sticker vào trang" : "Đã chèn ảnh vào trang")
+    } catch (e: any) {
+      toast.error(e.message || "Không thể chèn ảnh vào trang.")
+    }
+  }
+
   const natural = async (el: El) => {
     if (el.nw && el.nh) return { nw: el.nw, nh: el.nh }
     const img = await loadImg(el.src!)
@@ -738,6 +829,7 @@ export default function CreativePage() {
               ["slides", "Bộ slide"],
               ["single", "Mẫu lẻ & trang trống"],
               ["ai", "Tạo bằng AI"],
+              ["imagegen", "Vẽ ảnh AI (Imagen)"],
               ["import", "Nhập tệp"],
             ] as const).map(([id, label]) => (
               <Button key={id} variant={libraryTab === id ? "primary" : "outline"} aria-pressed={libraryTab === id} onClick={() => setLibraryTab(id)}>
@@ -878,6 +970,126 @@ export default function CreativePage() {
             </Button>
           </div>
 
+          )}
+          {libraryTab === "imagegen" && (
+            <div className="mt-3 rounded-2xl bg-gradient-to-br from-violet-50 via-pink-50 to-amber-50 p-5 ring-1 ring-violet-200">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-violet-600" />
+                  <div>
+                    <h3 className="font-semibold text-slate-800">Tạo ảnh bằng AI (Google Labs Imagen)</h3>
+                    <p className="text-xs text-slate-500">Tạo ảnh minh họa chất lượng cao để chèn vào slide hoặc làm sticker</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      imageServerStatus?.running ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${imageServerStatus?.running ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {imageServerStatus?.running ? "Máy chủ sẵn sàng" : "Chưa kết nối máy chủ"}
+                  </span>
+                  <Button variant="outline" size="sm" loading={imageServerChecking} onClick={refreshImageServer} className="h-7 text-xs">
+                    Kiểm tra
+                  </Button>
+                </div>
+              </div>
+
+              {!imageServerStatus?.running && (
+                <div className="mt-3 rounded-xl bg-white/90 p-3 text-xs text-slate-600 ring-1 ring-amber-200">
+                  <p className="font-medium text-amber-800">💡 Hướng dẫn kết nối máy chủ:</p>
+                  <p className="mt-1">
+                    Khởi động dự án <code className="rounded bg-slate-100 px-1 py-0.5 font-mono">api-ai-flowchart</code> tại cổng 3069 (<code className="rounded bg-slate-100 px-1 py-0.5 font-mono">npm start</code>). Sau đó bấm nút “Kiểm tra” bên trên.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 space-y-3.5">
+                <div>
+                  <Label>Mô tả ảnh bạn muốn tạo (Prompt)</Label>
+                  <Textarea
+                    rows={2}
+                    value={imageGenPrompt}
+                    onChange={(e) => setImageGenPrompt(e.target.value)}
+                    placeholder="Ví dụ: chú mèo pastel ngồi đọc sách bên cửa sổ hoa tulip, màu nước nhẹ nhàng..."
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-slate-500">Gợi ý phong cách nhanh:</Label>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {PROMPT_PRESETS.map((p) => (
+                      <button
+                        key={p.name}
+                        type="button"
+                        onClick={() => setImageGenPrompt((prev) => (prev ? `${prev}, ${p.style}` : `${p.hint}, ${p.style}`))}
+                        className="rounded-lg bg-white px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200 transition hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-300"
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-[160px]">
+                    <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
+                    <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v as AiAspectRatio)} className="mt-1 bg-white">
+                      {AI_ASPECT_RATIOS.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="pt-5">
+                    <Button
+                      icon={Sparkles}
+                      loading={imageGenLoading}
+                      onClick={handleGenerateAiImage}
+                      className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm"
+                    >
+                      {imageGenLoading ? `Đang tạo (${imageGenProgress}%)...` : "Tạo ảnh với AI"}
+                    </Button>
+                  </div>
+                </div>
+
+                {imageGenLoading && (
+                  <div className="mt-2 rounded-xl bg-white p-3 ring-1 ring-violet-200">
+                    <div className="flex justify-between text-xs text-violet-700 mb-1.5">
+                      <span>Đang xử lý qua Google Labs Imagen...</span>
+                      <span className="font-semibold">{imageGenProgress}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full bg-gradient-to-r from-violet-600 to-pink-500 transition-all duration-300" style={{ width: `${imageGenProgress}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                {imageGenResult && (
+                  <div className="mt-3 rounded-xl bg-white p-4 ring-1 ring-slate-200">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Ảnh đã tạo hoàn thành</h4>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <img
+                        src={imageGenResultDataUrl || imageGenResult}
+                        alt="AI Result"
+                        className="h-44 w-44 rounded-xl object-cover shadow-sm ring-1 ring-slate-200"
+                      />
+                      <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <Button variant="primary" onClick={() => handleInsertAiImage(false)}>
+                          Chèn vào trang thiết kế
+                        </Button>
+                        <Button variant="outline" onClick={() => handleInsertAiImage(true)} className="border-violet-300 text-violet-700 hover:bg-violet-50">
+                          ✨ Tách nền & Chèn làm Sticker
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
           {libraryTab === "single" && (
           <>
@@ -1030,6 +1242,17 @@ export default function CreativePage() {
                 <AddBtn icon={Circle} label="Hình tròn" onClick={() => addEl(shape("circle", { w: Math.round(cur.w * 0.3), h: Math.round(cur.w * 0.3) }))} />
                 <AddBtn icon={ImagePlus} label="Ảnh" onClick={() => fileRef.current?.click()} />
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  refreshImageServer()
+                  setShowImageGenModal(true)
+                }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 px-2 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
+              >
+                <Sparkles className="h-4 w-4" />
+                Vẽ ảnh bằng AI
+              </button>
               <input
                 ref={fileRef}
                 type="file"
@@ -1397,6 +1620,132 @@ export default function CreativePage() {
       )}
 
       {cropping && <CropModal el={cropping} onClose={() => setCropping(null)} onApply={(c, nw, nh) => applyCrop(cropping, c, nw, nh)} />}
+
+      {showImageGenModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4" onPointerDown={() => setShowImageGenModal(false)}>
+          <Card className="w-full max-w-xl bg-white p-5 shadow-2xl" onPointerDown={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-100 text-violet-600">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="font-semibold text-slate-800">Tạo ảnh bằng AI (Google Labs Imagen)</h3>
+                  <p className="text-xs text-slate-500">Tạo hình minh họa, sticker trang trí hoặc ảnh nền</p>
+                </div>
+              </div>
+              <Button size="icon" variant="ghost" icon={X} aria-label="Đóng" onClick={() => setShowImageGenModal(false)} />
+            </div>
+
+            {/* Server status banner */}
+            <div className="mb-4 flex items-center justify-between rounded-xl bg-slate-50 p-2.5 ring-1 ring-slate-200">
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`h-2.5 w-2.5 rounded-full ${imageServerStatus?.running ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
+                <span className="font-medium text-slate-700">
+                  {imageServerStatus?.running ? "Máy chủ tạo ảnh đã sẵn sàng" : "Máy chủ chưa khởi động (Cổng 3069)"}
+                </span>
+              </div>
+              <Button size="sm" variant="outline" loading={imageServerChecking} onClick={refreshImageServer} className="h-7 text-xs">
+                Kiểm tra lại
+              </Button>
+            </div>
+
+            {!imageServerStatus?.running && (
+              <div className="mb-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-900 ring-1 ring-amber-200">
+                <p className="font-semibold">💡 Hướng dẫn chạy máy chủ tạo ảnh:</p>
+                <p className="mt-1">
+                  Mở terminal và chạy lệnh: <code className="rounded bg-white px-1.5 py-0.5 font-mono text-amber-950 ring-1 ring-amber-300">cd /home/dragonccm/Documents/api-ai-flowchart && npm start</code>
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-3.5">
+              <div>
+                <Label>Mô tả ảnh bạn muốn tạo (Prompt)</Label>
+                <Textarea
+                  rows={2}
+                  value={imageGenPrompt}
+                  onChange={(e) => setImageGenPrompt(e.target.value)}
+                  placeholder="Ví dụ: chú mèo pastel ngồi đọc sách bên cửa sổ hoa tulip, màu nước nhẹ nhàng..."
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs text-slate-500">Gợi ý phong cách nhanh:</Label>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {PROMPT_PRESETS.map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => setImageGenPrompt((prev) => (prev ? `${prev}, ${p.style}` : `${p.hint}, ${p.style}`))}
+                      className="rounded-lg bg-slate-50 px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200 transition hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-300"
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[160px]">
+                  <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
+                  <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v as AiAspectRatio)} className="mt-1 bg-white">
+                    {AI_ASPECT_RATIOS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="pt-5">
+                  <Button
+                    icon={Sparkles}
+                    loading={imageGenLoading}
+                    onClick={handleGenerateAiImage}
+                    className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-sm"
+                  >
+                    {imageGenLoading ? `Đang tạo (${imageGenProgress}%)...` : "Bắt đầu tạo ảnh"}
+                  </Button>
+                </div>
+              </div>
+
+              {imageGenLoading && (
+                <div className="rounded-xl bg-violet-50/50 p-3 ring-1 ring-violet-200">
+                  <div className="flex justify-between text-xs text-violet-700 mb-1.5">
+                    <span>Đang render bằng Google Labs Imagen...</span>
+                    <span className="font-semibold">{imageGenProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-full bg-gradient-to-r from-violet-600 to-pink-500 transition-all duration-300" style={{ width: `${imageGenProgress}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {imageGenResult && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Ảnh đã hoàn thành</h4>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <img
+                      src={imageGenResultDataUrl || imageGenResult}
+                      alt="AI Result"
+                      className="h-44 w-44 rounded-xl object-cover shadow-md ring-1 ring-black/10"
+                    />
+                    <div className="flex flex-1 flex-col gap-2 w-full">
+                      <Button variant="primary" onClick={() => handleInsertAiImage(false)} className="w-full">
+                        Chèn vào trang thiết kế
+                      </Button>
+                      <Button variant="outline" onClick={() => handleInsertAiImage(true)} className="w-full border-violet-300 text-violet-700 hover:bg-violet-50">
+                        ✨ Tách nền & Chèn làm Sticker
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

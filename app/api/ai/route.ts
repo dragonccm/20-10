@@ -81,6 +81,13 @@ function build(task: string, b: Record<string, unknown>): Spec | null {
           " Kiểm tra câu tiếng Hàn của người học. Trình bày: 1) Câu đã sửa (nếu cần), 2) Giải thích từng lỗi (tiểu từ, đuôi câu, chia động từ, kính ngữ), 3) Ý nghĩa tiếng Việt, 4) Một câu ví dụ tương tự.",
         user: text,
       }
+    case "english":
+      return {
+        system:
+          TEACHER +
+          " Bạn là chuyên gia học thuật Cambridge. Kiểm tra câu tiếng Anh của người học. Trình bày: 1) Câu đã sửa chuẩn học thuật (Formal Academic English), 2) Giải thích chi tiết các lỗi (ngữ pháp, collocations, giới từ, sự phù hợp ngữ cảnh), 3) Gợi ý từ/cụm từ học thuật tương đương theo chuẩn Cambridge AWL / C1, 4) Dịch nghĩa tiếng Việt.",
+        user: text,
+      }
     case "interview":
       return {
         system:

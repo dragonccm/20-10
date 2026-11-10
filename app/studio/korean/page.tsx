@@ -9,6 +9,7 @@ import { downloadFile, uid, useStored } from "@/lib/studio/storage"
 import { callAi } from "@/lib/studio/ai"
 import { cn } from "@/lib/utils"
 import { fileToDataUrl } from "@/lib/studio/image"
+import { CAMBRIDGE_AWL, ACADEMIC_PHRASES, ACADEMIC_PREPOSITIONS } from "@/lib/studio/cambridge"
 
 const tool = TOOLS.find((t) => t.slug === "korean")!
 const DAY = 86400000
@@ -76,12 +77,12 @@ function attach(noun: string) {
   ]
 }
 
-function speak(text: string) {
+function speak(text: string, lang: "ko" | "en" = "ko") {
   try {
     const u = new SpeechSynthesisUtterance(text)
-    u.lang = "ko-KR"
+    u.lang = lang === "ko" ? "ko-KR" : "en-GB"
     u.rate = 0.9
-    const voice = speechSynthesis.getVoices().find((v) => v.lang.startsWith("ko"))
+    const voice = speechSynthesis.getVoices().find((v) => v.lang.startsWith(lang === "ko" ? "ko" : "en"))
     if (voice) u.voice = voice
     speechSynthesis.cancel()
     speechSynthesis.speak(u)
@@ -102,37 +103,97 @@ const makeCard = (front: string, back: string, example?: string): FlashCard => (
 })
 
 export default function KoreanPage() {
-  const [cards, setCards, loaded] = useStored<FlashCard[]>("bloom.korean.cards", [])
-  const [seeded, setSeeded] = useStored("bloom.korean.seeded", false)
+  const [lang, setLang] = useStored<"ko" | "en">("bloom.language.active", "ko")
+  const [cardsKo, setCardsKo, loadedKo] = useStored<FlashCard[]>("bloom.korean.cards", [])
+  const [seededKo, setSeededKo] = useStored("bloom.korean.seeded", false)
+  const [cardsEn, setCardsEn, loadedEn] = useStored<FlashCard[]>("bloom.english.cards", [])
+  const [seededEn, setSeededEn] = useStored("bloom.english.seeded", false)
   const [tab, setTab] = useState<"review" | "deck" | "grammar" | "check">("review")
 
   useEffect(() => {
-    if (loaded && !seeded) {
-      setCards((cs) => (cs.length ? cs : STARTER.map(([f, b, e]) => makeCard(f, b, e))))
-      setSeeded(true)
+    if (loadedKo && !seededKo) {
+      setCardsKo((cs) => (cs.length ? cs : STARTER.map(([f, b, e]) => makeCard(f, b, e))))
+      setSeededKo(true)
     }
-  }, [loaded, seeded, setCards, setSeeded])
+  }, [loadedKo, seededKo, setCardsKo, setSeededKo])
 
-  if (!loaded) return null
+  useEffect(() => {
+    if (loadedEn && !seededEn) {
+      setCardsEn((cs) =>
+        cs.length
+          ? cs
+          : CAMBRIDGE_AWL.map((w) => makeCard(w.word, `${w.vi} (${w.pos}) · ${w.ipa}`, w.example))
+      )
+      setSeededEn(true)
+    }
+  }, [loadedEn, seededEn, setCardsEn, setSeededEn])
+
+  if (!loadedKo || !loadedEn) return null
+
+  const cards = lang === "ko" ? cardsKo : cardsEn
+  const setCards = lang === "ko" ? setCardsKo : setCardsEn
 
   return (
     <div>
-      <PageHeader icon={tool.icon} tint={tool.tint} title={tool.name} guide={tool.guide} desc="Học từ vựng mỗi ngày bằng lặp lại ngắt quãng, nắm chắc tiểu từ và tự kiểm tra câu tiếng Hàn." />
+      <PageHeader
+        icon={tool.icon}
+        tint={tool.tint}
+        title={tool.name}
+        guide={tool.guide}
+        desc={
+          lang === "ko"
+            ? "Học từ vựng tiếng Hàn mỗi ngày bằng lặp lại ngắt quãng, nắm chắc tiểu từ và tự kiểm tra câu."
+            : "Ôn từ vựng học thuật Cambridge Academic Word List (AWL), tra cứu collocations và kiểm tra văn phong bài luận."
+        }
+      />
+
+      {/* Language Switcher Bar */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200/80 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Ngôn ngữ:</span>
+          <div className="flex rounded-xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                lang === "ko" ? "bg-white text-violet-700 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <span>🇰🇷</span> Tiếng Hàn (TOPIK)
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                lang === "en" ? "bg-white text-violet-700 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <span>🇬🇧</span> Tiếng Anh (Cambridge AWL)
+            </button>
+          </div>
+        </div>
+        <div className="text-xs text-slate-500">
+          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Kho từ học thuật Cambridge Academic Word List & Collocations C1"}
+        </div>
+      </div>
+
       <Tabs
         value={tab}
         onChange={setTab}
         tabs={[
           { id: "review", label: "Ôn tập", icon: RotateCcw },
           { id: "deck", label: `Bộ thẻ (${cards.length})`, icon: Layers },
-          { id: "grammar", label: "Tiểu từ", icon: BookOpen },
+          { id: "grammar", label: lang === "ko" ? "Tiểu từ" : "Học thuật & Collocations", icon: BookOpen },
           { id: "check", label: "Kiểm tra câu", icon: SpellCheck },
         ]}
       />
       <div className="mt-4">
-        {tab === "review" && <Review cards={cards} setCards={setCards} />}
-        {tab === "deck" && <Deck cards={cards} setCards={setCards} />}
-        {tab === "grammar" && <Grammar />}
-        {tab === "check" && <SentenceCheck />}
+        {tab === "review" && <Review cards={cards} setCards={setCards} lang={lang} />}
+        {tab === "deck" && <Deck cards={cards} setCards={setCards} lang={lang} />}
+        {tab === "grammar" && (lang === "ko" ? <Grammar /> : <EnglishGrammar />)}
+        {tab === "check" && <SentenceCheck lang={lang} />}
       </div>
     </div>
   )
@@ -144,7 +205,7 @@ type Mode = "flip" | "choice" | "type"
 
 const normalizeKo = (s: string) => s.normalize("NFC").replace(/[\s.,!?·~'"“”‘’()-]/g, "").toLowerCase()
 
-function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
+function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: SetCards; lang?: "ko" | "en" }) {
   const [now, setNow] = useState(() => Date.now())
   const [mode, setMode] = useStored<Mode>("bloom.korean.mode", "flip")
   const [flipped, setFlipped] = useState(false)
@@ -153,6 +214,8 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
   const [typed, setTyped] = useState("")
   const [checked, setChecked] = useState<null | boolean>(null)
   const [session, setSession] = useState({ right: 0, wrong: 0 })
+
+  const normalizeWord = (s: string) => (lang === "ko" ? normalizeKo(s) : s.trim().toLowerCase())
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 20000)
@@ -221,14 +284,14 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
   const choose = (opt: string) => {
     if (picked || !current) return
     setPicked(opt)
-    if (opt === current.back) speak(current.front)
+    if (opt === current.back) speak(current.front, lang)
   }
 
   const checkTyped = () => {
     if (!current || !typed.trim()) return
-    const ok = normalizeKo(typed) === normalizeKo(current.front)
+    const ok = normalizeWord(typed) === normalizeWord(current.front)
     setChecked(ok)
-    speak(current.front)
+    speak(current.front, lang)
   }
 
   useEffect(() => {
@@ -300,14 +363,14 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
               onClick={() => setFlipped((f) => !f)}
               className="flex min-h-72 w-full flex-col items-center justify-center rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200/70 transition hover:shadow-md"
             >
-              <span className="text-4xl font-semibold text-slate-800 sm:text-5xl" lang="ko">
+              <span className="text-4xl font-semibold text-slate-800 sm:text-5xl" lang={lang}>
                 {current.front}
               </span>
               {flipped ? (
                 <span className="mt-6 block">
                   <span className="block text-xl text-violet-700">{current.back}</span>
                   {current.example && (
-                    <span className="mt-3 block text-sm text-slate-500" lang="ko">
+                    <span className="mt-3 block text-sm text-slate-500" lang={lang}>
                       {current.example}
                     </span>
                   )}
@@ -317,7 +380,7 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
               )}
             </button>
             <div className="mt-3 flex justify-center">
-              <Button variant="ghost" icon={Volume2} onClick={() => speak(current.front + (flipped && current.example ? `. ${current.example}` : ""))}>
+              <Button variant="ghost" icon={Volume2} onClick={() => speak(current.front + (flipped && current.example ? `. ${current.example}` : ""), lang)}>
                 Nghe phát âm
               </Button>
             </div>
@@ -345,10 +408,10 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
           <Card className="p-6">
             <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">Chọn nghĩa đúng</p>
             <div className="mt-3 flex items-center justify-center gap-3">
-              <span className="text-4xl font-semibold text-slate-800 sm:text-5xl" lang="ko">
+              <span className="text-4xl font-semibold text-slate-800 sm:text-5xl" lang={lang}>
                 {current.front}
               </span>
-              <Button variant="ghost" size="icon" icon={Volume2} aria-label="Nghe" onClick={() => speak(current.front)} />
+              <Button variant="ghost" size="icon" icon={Volume2} aria-label="Nghe" onClick={() => speak(current.front, lang)} />
             </div>
             {options.length < 2 ? (
               <p className="mt-6 text-center text-sm text-slate-500">Cần ít nhất 2 thẻ có nghĩa khác nhau để làm trắc nghiệm.</p>
@@ -384,7 +447,7 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
                     {picked === current.back ? "Chính xác!" : `Đáp án: ${current.back}`}
                   </span>
                   {current.example && (
-                    <span className="mt-1 block text-slate-500" lang="ko">
+                    <span className="mt-1 block text-slate-500" lang={lang}>
                       {current.example}
                     </span>
                   )}
@@ -395,7 +458,9 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
           </Card>
         ) : (
           <Card className="p-6">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">Viết từ tiếng Hàn</p>
+            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+              {lang === "ko" ? "Viết từ tiếng Hàn" : "Viết từ tiếng Anh"}
+            </p>
             <p className="mt-3 text-center text-3xl font-semibold text-violet-700">{current.back}</p>
             <form
               className="mx-auto mt-6 flex max-w-md gap-2"
@@ -407,11 +472,11 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
             >
               <Input
                 autoFocus
-                lang="ko"
+                lang={lang}
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 disabled={checked !== null}
-                placeholder="Gõ bằng bàn phím tiếng Hàn..."
+                placeholder={lang === "ko" ? "Gõ bằng bàn phím tiếng Hàn..." : "Gõ từ tiếng Anh..."}
                 className={cn("text-lg", checked === true && "border-emerald-400 bg-emerald-50", checked === false && "border-rose-400 bg-rose-50")}
               />
               <Button type="submit">{checked === null ? "Kiểm tra" : "Tiếp tục"}</Button>
@@ -455,7 +520,7 @@ function Review({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards })
 
 type Draft = { id: string; front: string; back: string; example: string; on: boolean; dup: boolean }
 
-function AiVocab({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
+function AiVocab({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: SetCards; lang?: "ko" | "en" }) {
   const [src, setSrc] = useState<"image" | "text">("image")
   const [image, setImage] = useState<string | null>(null)
   const [text, setText] = useState("")
@@ -475,21 +540,23 @@ function AiVocab({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }
 
   const run = async () => {
     if (src === "image" && !image) return toast.info("Hãy chụp hoặc chọn một ảnh trước.")
-    if (src === "text" && !text.trim()) return toast.info("Hãy dán một đoạn văn tiếng Hàn.")
+    if (src === "text" && !text.trim()) {
+      return toast.info(lang === "ko" ? "Hãy dán một đoạn văn tiếng Hàn." : "Hãy dán một đoạn văn tiếng Anh.")
+    }
     setBusy(true)
     try {
       const res = await callAi<{ cards?: { front?: string; back?: string; example?: string }[] }>("vocab", src === "image" ? { image, text: "" } : { text })
-      const known = new Set(cards.map((c) => c.front.trim()))
+      const known = new Set(cards.map((c) => c.front.trim().toLowerCase()))
       const seen = new Set<string>()
       const list = (res.cards ?? [])
         .filter((c) => typeof c.front === "string" && c.front.trim() && typeof c.back === "string")
-        .filter((c) => !seen.has(c.front!.trim()) && seen.add(c.front!.trim()))
+        .filter((c) => !seen.has(c.front!.trim().toLowerCase()) && seen.add(c.front!.trim().toLowerCase()))
         .map((c) => {
-          const dup = known.has(c.front!.trim())
+          const dup = known.has(c.front!.trim().toLowerCase())
           return { id: uid(), front: c.front!.trim(), back: c.back!.trim(), example: (c.example ?? "").trim(), on: !dup, dup }
         })
       setDrafts(list)
-      if (!list.length) toast.info("Không tìm thấy từ tiếng Hàn nào. Thử ảnh rõ hơn nhé.")
+      if (!list.length) toast.info(lang === "ko" ? "Không tìm thấy từ tiếng Hàn nào. Thử ảnh rõ hơn nhé." : "Không tìm thấy từ vựng nào. Thử ảnh rõ hơn nhé.")
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -588,11 +655,11 @@ function AiVocab({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }
                 <div className="flex items-start gap-2">
                   <input type="checkbox" checked={d.on} onChange={(e) => edit(d.id, { on: e.target.checked })} className="mt-3 accent-violet-600" aria-label="Chọn từ" />
                   <div className="grid min-w-0 flex-1 gap-1.5 sm:grid-cols-[1fr_1.3fr]">
-                    <Input value={d.front} onChange={(e) => edit(d.id, { front: e.target.value })} lang="ko" className="h-9" aria-label="Từ tiếng Hàn" />
+                    <Input value={d.front} onChange={(e) => edit(d.id, { front: e.target.value })} lang={lang} className="h-9" aria-label="Từ vựng" />
                     <Input value={d.back} onChange={(e) => edit(d.id, { back: e.target.value })} className="h-9" aria-label="Nghĩa" />
-                    <Input value={d.example} onChange={(e) => edit(d.id, { example: e.target.value })} lang="ko" className="h-9 text-xs sm:col-span-2" placeholder="Câu ví dụ" aria-label="Câu ví dụ" />
+                    <Input value={d.example} onChange={(e) => edit(d.id, { example: e.target.value })} lang={lang} className="h-9 text-xs sm:col-span-2" placeholder="Câu ví dụ" aria-label="Câu ví dụ" />
                   </div>
-                  <button type="button" onClick={() => speak(d.front)} aria-label="Nghe" className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-violet-50 hover:text-violet-600">
+                  <button type="button" onClick={() => speak(d.front, lang)} aria-label="Nghe" className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-violet-50 hover:text-violet-600">
                     <Volume2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -615,7 +682,7 @@ function AiVocab({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }
   )
 }
 
-function Deck({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
+function Deck({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: SetCards; lang?: "ko" | "en" }) {
   const [front, setFront] = useState("")
   const [back, setBack] = useState("")
   const [example, setExample] = useState("")
@@ -639,7 +706,7 @@ function Deck({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
       .filter(Boolean)
       .map((l) => l.split(/\t|\s+[-–=:|]\s+|\s*\|\s*/))
       .filter((p) => p.length >= 2 && p[0] && p[1])
-    if (!rows.length) return toast.error("Không đọc được dòng nào. Dùng dạng: 단어 - nghĩa")
+    if (!rows.length) return toast.error("Không đọc được dòng nào. Dùng dạng: từ - nghĩa")
     setCards((cs) => [...rows.map((p) => makeCard(p[0].trim(), p[1].trim(), p[2]?.trim())), ...cs])
     setBulk("")
     setShowBulk(false)
@@ -648,24 +715,43 @@ function Deck({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
 
   const exportCsv = () => {
     const esc = (s = "") => `"${s.replace(/"/g, '""')}"`
-    downloadFile("korean-flashcards.csv", "﻿" + ["front,back,example", ...cards.map((c) => [c.front, c.back, c.example].map(esc).join(","))].join("\n"), "text/csv;charset=utf-8")
+    const fileName = lang === "ko" ? "korean-flashcards.csv" : "cambridge-awl-flashcards.csv"
+    downloadFile(fileName, "﻿" + ["front,back,example", ...cards.map((c) => [c.front, c.back, c.example].map(esc).join(","))].join("\n"), "text/csv;charset=utf-8")
+  }
+
+  const loadCambridgePack = () => {
+    const existing = new Set(cards.map((c) => c.front.toLowerCase()))
+    const toAdd = CAMBRIDGE_AWL.filter((w) => !existing.has(w.word.toLowerCase())).map((w) =>
+      makeCard(w.word, `${w.vi} (${w.pos}) · ${w.ipa}`, w.example)
+    )
+    if (!toAdd.length) {
+      toast.info("Đã có đủ tất cả từ vựng trong danh mục Cambridge AWL!")
+    } else {
+      setCards((cs) => [...toAdd, ...cs])
+      toast.success(`Đã nạp thêm ${toAdd.length} từ vựng học thuật Cambridge AWL!`)
+    }
   }
 
   const filtered = cards.filter((c) => !q || `${c.front} ${c.back}`.toLowerCase().includes(q.toLowerCase()))
 
   return (
     <div className="space-y-4">
-      <AiVocab cards={cards} setCards={setCards} />
+      <AiVocab cards={cards} setCards={setCards} lang={lang} />
       <Card className="p-4">
         <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
-          <Input value={front} onChange={(e) => setFront(e.target.value)} placeholder="Từ tiếng Hàn" lang="ko" />
+          <Input value={front} onChange={(e) => setFront(e.target.value)} placeholder={lang === "ko" ? "Từ tiếng Hàn" : "Từ tiếng Anh (Headword)"} lang={lang} />
           <Input value={back} onChange={(e) => setBack(e.target.value)} placeholder="Nghĩa tiếng Việt" />
           <Input value={example} onChange={(e) => setExample(e.target.value)} placeholder="Câu ví dụ (tùy chọn)" onKeyDown={(e) => e.key === "Enter" && add()} />
           <Button icon={Plus} onClick={add}>
             Thêm
           </Button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {lang === "en" && (
+            <Button size="sm" variant="soft" onClick={loadCambridgePack} className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+              📚 Nạp thêm từ vựng Cambridge AWL
+            </Button>
+          )}
           <Button size="sm" variant={showBulk ? "soft" : "outline"} icon={Upload} onClick={() => setShowBulk((v) => !v)}>
             Nhập nhiều thẻ
           </Button>
@@ -675,7 +761,12 @@ function Deck({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
         </div>
         {showBulk && (
           <div className="mt-3">
-            <Textarea rows={6} value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder={"Mỗi dòng một thẻ:\n사과 - quả táo\n기차 | tàu hỏa | 기차를 타요."} />
+            <Textarea
+              rows={6}
+              value={bulk}
+              onChange={(e) => setBulk(e.target.value)}
+              placeholder={lang === "ko" ? "Mỗi dòng một thẻ:\n사과 - quả táo\n기차 | tàu hỏa | 기차를 타요." : "Mỗi dòng một thẻ:\nanalyze - phân tích dữ liệu\nconcept | khái niệm lý thuyết | fundamental concept"}
+            />
             <Button className="mt-2" size="sm" onClick={importBulk}>
               Thêm các thẻ này
             </Button>
@@ -694,15 +785,15 @@ function Deck({ cards, setCards }: { cards: FlashCard[]; setCards: SetCards }) {
           <ul className="divide-y divide-slate-100">
             {filtered.map((c) => (
               <li key={c.id} className="flex items-center gap-3 py-2.5">
-                <button type="button" onClick={() => speak(c.front)} aria-label="Nghe" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-violet-50 hover:text-violet-600">
+                <button type="button" onClick={() => speak(c.front, lang)} aria-label="Nghe" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-violet-50 hover:text-violet-600">
                   <Volume2 className="h-4 w-4" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-slate-800" lang="ko">
+                  <div className="font-medium text-slate-800" lang={lang}>
                     {c.front} <span className="font-normal text-slate-500">· {c.back}</span>
                   </div>
                   {c.example && (
-                    <div className="truncate text-xs text-slate-500" lang="ko">
+                    <div className="truncate text-xs text-slate-500" lang={lang}>
                       {c.example}
                     </div>
                   )}
@@ -732,7 +823,7 @@ function Grammar() {
               </div>
               <div>
                 <div className="text-sm text-slate-700">{p.use}</div>
-                <button type="button" onClick={() => speak(p.ex)} className="mt-1 inline-flex items-center gap-1.5 text-left text-sm text-slate-500 hover:text-violet-700">
+                <button type="button" onClick={() => speak(p.ex, "ko")} className="mt-1 inline-flex items-center gap-1.5 text-left text-sm text-slate-500 hover:text-violet-700">
                   <Volume2 className="h-3.5 w-3.5 shrink-0" />
                   <span lang="ko">{p.ex}</span>
                   <span className="text-slate-400">· {p.vi}</span>
@@ -768,31 +859,169 @@ function Grammar() {
   )
 }
 
-function SentenceCheck() {
-  const [text, setText] = useStored("bloom.korean.check", "")
+function EnglishGrammar() {
+  const [filter, setFilter] = useState("")
+  const [catIndex, setCatIndex] = useState(0)
+
+  const activeCategory = ACADEMIC_PHRASES[catIndex]
+  const filteredPreps = ACADEMIC_PREPOSITIONS.filter(
+    (p) =>
+      !filter ||
+      p.verb.toLowerCase().includes(filter.toLowerCase()) ||
+      p.meaning.toLowerCase().includes(filter.toLowerCase())
+  )
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      {/* Cụm từ liên kết học thuật */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <BookOpen className="h-5 w-5 text-blue-600" />
+          <div>
+            <h3 className="font-semibold text-slate-800">Cụm từ liên kết học thuật Cambridge</h3>
+            <p className="text-xs text-slate-500">Các mẫu câu dẫn chuẩn mực cho bài luận C1 & IELTS Academic</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {ACADEMIC_PHRASES.map((cat, i) => (
+            <button
+              key={cat.category}
+              type="button"
+              onClick={() => setCatIndex(i)}
+              className={cn(
+                "rounded-xl px-3 py-1.5 text-xs font-medium transition",
+                catIndex === i ? "bg-blue-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {cat.category}
+            </button>
+          ))}
+        </div>
+
+        <ul className="divide-y divide-slate-100 rounded-xl bg-slate-50 p-2">
+          {activeCategory.items.map((item) => (
+            <li key={item.en} className="py-2.5 px-2">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium text-slate-800 text-sm" lang="en">
+                  {item.en}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => speak(item.en.replace(/\.\.\./g, ""), "en")}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                  aria-label="Nghe đọc"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">{item.vi}</p>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      {/* Động từ & giới từ học thuật */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-600" />
+            <div>
+              <h3 className="font-semibold text-slate-800">Động từ & Giới từ đi kèm</h3>
+              <p className="text-xs text-slate-500">Academic Verbs & Prepositions</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Tìm động từ hoặc nghĩa..."
+            className="h-8 pl-8 text-xs bg-white"
+          />
+        </div>
+
+        <div className="max-h-[460px] overflow-y-auto space-y-2 pr-1">
+          {filteredPreps.map((p) => (
+            <div key={p.verb} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-indigo-700 text-sm" lang="en">
+                    {p.verb}
+                  </span>
+                  <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">+{p.prep}</Badge>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speak(p.example, "en")}
+                  className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                  aria-label="Nghe ví dụ"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <p className="text-slate-600 mt-1 font-medium">{p.meaning}</p>
+              <p className="text-slate-500 italic mt-1 text-[11px]" lang="en">
+                Ví dụ: {p.example}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function SentenceCheck({ lang = "ko" }: { lang?: "ko" | "en" }) {
+  const [textKo, setTextKo] = useStored("bloom.korean.check", "")
+  const [textEn, setTextEn] = useStored("bloom.english.check", "")
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState("")
+
+  const text = lang === "ko" ? textKo : textEn
+  const setText = lang === "ko" ? setTextKo : setTextEn
+
   const run = async () => {
-    if (!text.trim()) return toast.info("Hãy nhập câu tiếng Hàn.")
+    if (!text.trim()) {
+      return toast.info(lang === "ko" ? "Hãy nhập câu tiếng Hàn." : "Hãy nhập câu tiếng Anh học thuật.")
+    }
     setBusy(true)
     try {
-      setResult((await callAi("korean", { text })).text)
+      const task = lang === "ko" ? "korean" : "english"
+      setResult((await callAi(task, { text })).text)
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
       setBusy(false)
     }
   }
+
   return (
     <Card className="p-4">
       <AiNotice />
-      <Label>Câu hoặc đoạn văn tiếng Hàn</Label>
-      <Textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} lang="ko" placeholder="저는 학교에 공부해요." />
+      <Label>
+        {lang === "ko"
+          ? "Câu hoặc đoạn văn tiếng Hàn"
+          : "Câu hoặc đoạn văn tiếng Anh học thuật (Academic English)"}
+      </Label>
+      <Textarea
+        rows={5}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        lang={lang}
+        placeholder={
+          lang === "ko"
+            ? "저는 학교에 공부해요."
+            : "Ví dụ: In stark contrast to previous studies, our empirical findings demonstrate that..."
+        }
+      />
       <div className="mt-3 flex flex-wrap gap-2">
         <Button icon={Sparkles} loading={busy} onClick={run}>
-          Kiểm tra và giải thích
+          {lang === "ko" ? "Kiểm tra và giải thích" : "Kiểm tra chuẩn học thuật Cambridge"}
         </Button>
-        <Button variant="outline" icon={Volume2} onClick={() => text.trim() && speak(text)}>
+        <Button variant="outline" icon={Volume2} onClick={() => text.trim() && speak(text, lang)}>
           Nghe đọc
         </Button>
       </div>

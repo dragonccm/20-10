@@ -10,6 +10,7 @@ export type AiTask =
   | "academic"
   | "translate"
   | "korean"
+  | "english"
   | "interview"
   | "cover-letter"
   | "vocab"

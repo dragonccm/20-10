@@ -13,7 +13,7 @@ const TASKS: Task[] = [
   { href: "/studio/writing", icon: PenLine, title: "Viết hoặc sửa bài luận", desc: "AI chỉ ra từng lỗi kèm giải thích", tint: "bg-rose-100 text-rose-600" },
   { href: "/studio/writing?panel=cite", icon: GraduationCap, title: "Tìm nguồn trích dẫn cho bài", desc: "Chọn đoạn văn, AI tìm bài báo thật", tint: "bg-sky-100 text-sky-600" },
   { href: "/studio/documents", icon: FileUp, title: "Tải tài liệu lên cho AI đọc", desc: "Essay, slide, CV, PDF, ảnh chụp", tint: "bg-indigo-100 text-indigo-600" },
-  { href: "/studio/korean", icon: Languages, title: "Ôn từ vựng tiếng Hàn", desc: "Thẻ lật, nghe phát âm, sửa câu", tint: "bg-violet-100 text-violet-600" },
+  { href: "/studio/korean", icon: Languages, title: "Ôn ngoại ngữ (Hàn & Anh)", desc: "Thẻ lật, Cambridge AWL, nghe phát âm, sửa câu", tint: "bg-violet-100 text-violet-600" },
   { href: "/studio/career", icon: Briefcase, title: "Làm CV, luyện phỏng vấn", desc: "Nhiều mẫu đẹp, xuất PDF", tint: "bg-emerald-100 text-emerald-600" },
   { href: "/studio/creative", icon: Palette, title: "Làm poster, slide, thiệp", desc: "Từ mẫu có sẵn hoặc nhờ AI", tint: "bg-pink-100 text-pink-600" },
 ]

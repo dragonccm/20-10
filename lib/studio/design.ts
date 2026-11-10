@@ -81,7 +81,11 @@ export const TEMPLATE_CATS: TemplateCat[] = ["Mạng xã hội", "Học tập", 
 
 export const SLIDE_SETS = [
   { name: "Thuyết trình trên lớp", style: "Tạp chí · Tím", accent: "#5b21b6", paper: "#f5f3ff", layout: "editorial", pages: ["Tên bài thuyết trình", "Nội dung chính", "Ví dụ minh họa", "Kết luận", "Tài liệu tham khảo"] },
+  { name: "Bảo vệ khóa luận tốt nghiệp", style: "Học thuật · Xanh Navy", accent: "#1e3a8a", paper: "#f8fafc", layout: "editorial", pages: ["Bảo vệ khóa luận tốt nghiệp", "Tính cấp thiết & Mục tiêu", "Tổng quan cơ sở lý thuyết", "Phương pháp & Mẫu nghiên cứu", "Kết quả phân tích chính", "Hàm ý giải pháp & Kết luận", "Tài liệu tham khảo"] },
+  { name: "English Academic Seminar", style: "Oxford Style · Be & Xanh", accent: "#1d4ed8", paper: "#fefce8", layout: "split", pages: ["Academic Seminar & Research Paper", "Literature Review & Hypotheses", "Methodology & Empirical Data", "Key Findings & Discussion", "Implications for Future Studies", "References & Acknowledgements"] },
   { name: "Báo cáo nghiên cứu", style: "Tối giản · Xanh ngọc", accent: "#115e59", paper: "#f0fdfa", layout: "split", pages: ["Tên đề tài", "Câu hỏi nghiên cứu", "Phương pháp", "Kết quả", "Thảo luận", "Tài liệu tham khảo"] },
+  { name: "Phân tích so sánh & Đối chiếu", style: "Hiện đại · Xanh xô thơm", accent: "#065f46", paper: "#f0fdf4", layout: "split", pages: ["Nghiên cứu so sánh", "Bối cảnh & Đặt vấn đề", "So sánh phương án A và B", "Phân tích ưu điểm & hạn chế", "Bài học kinh nghiệm & Đề xuất"] },
+  { name: "Báo cáo số liệu & Thống kê", style: "Chuyên nghiệp · Chàm & Tím", accent: "#4338ca", paper: "#f5f3ff", layout: "orbit", pages: ["Báo cáo số liệu khảo sát", "Quy mô mẫu & Nhân khẩu học", "Các chỉ số thống kê cốt lõi", "Phân tích xu hướng biến số", "Khuyến nghị thực tiễn"] },
   { name: "Văn hóa và ngoại ngữ", style: "Hình học · Hồng mận", accent: "#9d174d", paper: "#fdf2f8", layout: "orbit", pages: ["한국 문화 · Văn hóa Hàn Quốc", "Bối cảnh", "Ví dụ và hình ảnh", "Từ vựng · 어휘", "Kết luận", "Tài liệu tham khảo"] },
   { name: "Dự án nhóm", style: "Tương phản · Xanh đêm", accent: "#1e3a8a", paper: "#eff6ff", layout: "orbit", pages: ["Dự án nhóm", "Mục tiêu", "Thành viên và vai trò", "Tiến độ", "Kết quả", "Bước tiếp theo"] },
   { name: "Kể chuyện bằng hình ảnh", style: "Tạp chí · Cam đất", accent: "#9a3412", paper: "#fff7ed", layout: "editorial", pages: ["Một câu chuyện bằng hình ảnh", "Bối cảnh", "Khoảnh khắc chính", "Điều đọng lại"] },
@@ -442,6 +446,184 @@ export const TEMPLATES: { name: string; cat: TemplateCat; make: () => DesignDraf
         ],
       }
     },
+  },
+  {
+    name: "Slide so sánh 2 luận điểm",
+    cat: "Thuyết trình",
+    make: () => ({
+      name: "Slide so sánh đối chiếu",
+      w: 1920,
+      h: 1080,
+      bg: { from: "#f8fafc", to: "#f1f5f9", angle: 135 },
+      els: [
+        T({ x: 140, y: 90, w: 1640, h: 100, text: "So sánh & Đối chiếu luận điểm", fontSize: 76, color: "#0f172a", weight: 800 }),
+        R({ x: 140, y: 200, w: 100, h: 6, fill: "#0ea5e9", radius: 3 }),
+        // Column A
+        R({ x: 140, y: 260, w: 790, h: 720, fill: "#ffffff", radius: 36, shadow: true }),
+        R({ x: 140, y: 260, w: 790, h: 110, fill: "#0284c7", radius: 36 }),
+        R({ x: 140, y: 330, w: 790, h: 40, fill: "#0284c7", radius: 0 }),
+        T({ x: 190, y: 285, w: 690, h: 60, text: "Phương án A · Truyền thống", fontSize: 44, color: "#ffffff", weight: 700 }),
+        T({
+          x: 190,
+          y: 410,
+          w: 690,
+          h: 520,
+          text: "• Dễ tiếp cận và quen thuộc với người học\n• Quy trình rõ ràng, ít phụ thuộc vào công nghệ\n• Chi phí đầu tư ban đầu thấp\n\nTuy nhiên:\n• Tốn nhiều thời gian tổng hợp thủ công\n• Khó cá nhân hóa lộ trình học cho từng bạn",
+          fontSize: 34,
+          color: "#334155",
+          weight: 400,
+          lineHeight: 1.6,
+        }),
+        // Column B
+        R({ x: 990, y: 260, w: 790, h: 720, fill: "#ffffff", radius: 36, shadow: true }),
+        R({ x: 990, y: 260, w: 790, h: 110, fill: "#8b5cf6", radius: 36 }),
+        R({ x: 990, y: 330, w: 790, h: 40, fill: "#8b5cf6", radius: 0 }),
+        T({ x: 1040, y: 285, w: 690, h: 60, text: "Phương án B · Ứng dụng AI", fontSize: 44, color: "#ffffff", weight: 700 }),
+        T({
+          x: 1040,
+          y: 410,
+          w: 690,
+          h: 520,
+          text: "• Tự động bóc tách lỗi và gợi ý giải thích tức thì\n• Thích ứng theo tốc độ ghi nhớ của người học (SM-2)\n• Tăng 40% hiệu suất ôn tập từ vựng\n\nLưu ý:\n• Cần người học tự rèn luyện tính kỷ luật\n• Không lạm dụng làm thay tư duy phản biện",
+          fontSize: 34,
+          color: "#334155",
+          weight: 400,
+          lineHeight: 1.6,
+        }),
+      ],
+    }),
+  },
+  {
+    name: "Slide trích dẫn học thuật",
+    cat: "Thuyết trình",
+    make: () => ({
+      name: "Slide trích dẫn học thuật",
+      w: 1920,
+      h: 1080,
+      bg: { from: "#0f172a", to: "#1e1b4b", angle: 150 },
+      els: [
+        C({ x: 1400, y: 100, w: 600, h: 600, fill: "#6366f1", opacity: 0.15 }),
+        T({ x: 180, y: 160, w: 240, h: 240, text: "“", fontSize: 280, color: "#a5b4fc", weight: 800, font: "serif" }),
+        T({
+          x: 180,
+          y: 380,
+          w: 1560,
+          h: 380,
+          text: "Ngôn ngữ không chỉ là công cụ để truyền đạt suy nghĩ, mà chính ngôn ngữ định hình cách chúng ta cảm nhận và tư duy về thế giới.",
+          fontSize: 66,
+          color: "#ffffff",
+          weight: 600,
+          font: "serif",
+          lineHeight: 1.45,
+        }),
+        R({ x: 180, y: 780, w: 120, h: 6, fill: "#a5b4fc", radius: 3 }),
+        T({ x: 180, y: 810, w: 1560, h: 60, text: "Giả thuyết Sapir-Whorf · Ngôn ngữ học tri nhận", fontSize: 38, color: "#c7d2fe", weight: 500 }),
+        T({ x: 180, y: 870, w: 1560, h: 50, text: "Trích từ: Language, Thought, and Reality (MIT Press)", fontSize: 32, color: "#94a3b8", italic: true }),
+      ],
+    }),
+  },
+  {
+    name: "Slide 3 số liệu thống kê",
+    cat: "Thuyết trình",
+    make: () => ({
+      name: "Slide số liệu thống kê",
+      w: 1920,
+      h: 1080,
+      bg: { from: "#ffffff", to: "#f8fafc", angle: 135 },
+      els: [
+        T({ x: 140, y: 100, w: 1640, h: 100, text: "Các phát hiện nghiên cứu nổi bật", fontSize: 76, color: "#0f172a", weight: 800 }),
+        R({ x: 140, y: 210, w: 100, h: 6, fill: "#6366f1", radius: 3 }),
+        // Metric 1
+        R({ x: 140, y: 320, w: 520, h: 600, fill: "#eef2ff", radius: 36 }),
+        T({ x: 180, y: 400, w: 440, h: 160, text: "87%", fontSize: 130, color: "#4338ca", weight: 800, align: "center" }),
+        T({ x: 180, y: 580, w: 440, h: 80, text: "Tỷ lệ nhớ từ vựng", fontSize: 44, color: "#1e1b4b", weight: 700, align: "center" }),
+        T({ x: 180, y: 670, w: 440, h: 180, text: "Người học duy trì ôn tập đều đặn qua thuật toán lặp lại ngắt quãng (SM-2) sau 30 ngày.", fontSize: 30, color: "#475569", weight: 400, align: "center", lineHeight: 1.5 }),
+        // Metric 2
+        R({ x: 700, y: 320, w: 520, h: 600, fill: "#f0fdf4", radius: 36 }),
+        T({ x: 740, y: 400, w: 440, h: 160, text: "2.4x", fontSize: 130, color: "#15803d", weight: 800, align: "center" }),
+        T({ x: 740, y: 580, w: 440, h: 80, text: "Tốc độ viết luận", fontSize: 44, color: "#14532d", weight: 700, align: "center" }),
+        T({ x: 740, y: 670, w: 440, h: 180, text: "Tiết kiệm thời gian rà soát ngữ pháp và tra cứu tài liệu tham khảo chuẩn APA.", fontSize: 30, color: "#475569", weight: 400, align: "center", lineHeight: 1.5 }),
+        // Metric 3
+        R({ x: 1260, y: 320, w: 520, h: 600, fill: "#fdf2f8", radius: 36 }),
+        T({ x: 1300, y: 400, w: 440, h: 160, text: "570", fontSize: 130, color: "#be185d", weight: 800, align: "center" }),
+        T({ x: 1300, y: 580, w: 440, h: 80, text: "Từ học thuật cốt lõi", fontSize: 44, color: "#831843", weight: 700, align: "center" }),
+        T({ x: 1300, y: 670, w: 440, h: 180, text: "Theo danh mục Cambridge Academic Word List (AWL) xuất hiện trong mọi bài báo khoa học.", fontSize: 30, color: "#475569", weight: 400, align: "center", lineHeight: 1.5 }),
+      ],
+    }),
+  },
+  {
+    name: "Slide quy trình 4 bước",
+    cat: "Thuyết trình",
+    make: () => {
+      const steps = [
+        ["01", "Khảo sát", "Thu thập dữ liệu và phân tích nhu cầu", "#3b82f6"],
+        ["02", "Thiết kế", "Xây dựng khung lý thuyết và bài giảng", "#8b5cf6"],
+        ["03", "Thử nghiệm", "Ứng dụng vào thực tế giảng dạy", "#ec4899"],
+        ["04", "Đánh giá", "Đo lường mức độ cải thiện của sinh viên", "#10b981"],
+      ]
+      return {
+        name: "Slide quy trình 4 bước",
+        w: 1920,
+        h: 1080,
+        bg: { from: "#ffffff", to: "#f8fafc", angle: 135 },
+        els: [
+          T({ x: 140, y: 100, w: 1640, h: 100, text: "Quy trình triển khai nghiên cứu", fontSize: 76, color: "#0f172a", weight: 800 }),
+          R({ x: 140, y: 210, w: 100, h: 6, fill: "#3b82f6", radius: 3 }),
+          R({ x: 180, y: 520, w: 1560, h: 8, fill: "#e2e8f0", radius: 4 }),
+          ...steps.flatMap(([num, title, desc, color], i) => {
+            const x = 140 + i * 420
+            return [
+              R({ x, y: 340, w: 380, h: 560, fill: "#ffffff", radius: 32, shadow: true }),
+              C({ x: x + 130, y: 380, w: 120, h: 120, fill: color }),
+              T({ x: x + 130, y: 405, w: 120, h: 80, text: num, fontSize: 50, color: "#ffffff", weight: 800, align: "center" }),
+              T({ x: x + 30, y: 540, w: 320, h: 70, text: title, fontSize: 44, color: "#1e293b", weight: 700, align: "center" }),
+              T({ x: x + 30, y: 620, w: 320, h: 200, text: desc, fontSize: 30, color: "#64748b", weight: 400, align: "center", lineHeight: 1.5 }),
+            ]
+          }),
+        ],
+      }
+    },
+  },
+  {
+    name: "Slide kết luận & Q&A",
+    cat: "Thuyết trình",
+    make: () => ({
+      name: "Slide kết luận",
+      w: 1920,
+      h: 1080,
+      bg: { from: "#1e1b4b", to: "#312e81", angle: 160 },
+      els: [
+        C({ x: 200, y: -200, w: 800, h: 800, fill: "#a78bfa", opacity: 0.15 }),
+        C({ x: 1400, y: 600, w: 600, h: 600, fill: "#f472b6", opacity: 0.15 }),
+        T({ x: 200, y: 320, w: 1520, h: 160, text: "Cảm ơn thầy cô & các bạn đã lắng nghe!", fontSize: 90, color: "#ffffff", weight: 800, align: "center", font: "serif" }),
+        T({ x: 200, y: 500, w: 1520, h: 80, text: "Questions & Answers (Q&A)", fontSize: 50, color: "#c7d2fe", weight: 500, align: "center" }),
+        R({ x: 860, y: 600, w: 200, h: 6, fill: "#f472b6", radius: 3 }),
+        T({ x: 200, y: 650, w: 1520, h: 120, text: "Nguyễn Thúy Ngân · Khoa Hàn Quốc học\nEmail: nguyenthuyngan@email.edu.vn", fontSize: 36, color: "#e0e7ff", weight: 400, align: "center", lineHeight: 1.8 }),
+      ],
+    }),
+  },
+  {
+    name: "Thẻ từ vựng học thuật AWL",
+    cat: "Học tập",
+    make: () => ({
+      name: "Flashcard Cambridge AWL",
+      w: 1080,
+      h: 1080,
+      bg: { from: "#f0fdf4", to: "#ede9fe", angle: 135 },
+      els: [
+        R({ x: 80, y: 80, w: 920, h: 920, fill: "#ffffff", radius: 48, shadow: true }),
+        R({ x: 120, y: 120, w: 220, h: 60, fill: "#dbeafe", radius: 30 }),
+        T({ x: 120, y: 132, w: 220, h: 40, text: "CAMBRIDGE AWL", fontSize: 26, color: "#1e40af", weight: 700, align: "center" }),
+        T({ x: 120, y: 240, w: 840, h: 130, text: "analyze", fontSize: 105, color: "#1e1b4b", weight: 800, font: "serif" }),
+        T({ x: 120, y: 370, w: 840, h: 50, text: "/ˈæn.əl.aɪz/ · verb", fontSize: 38, color: "#6b7280", italic: true }),
+        R({ x: 120, y: 440, w: 840, h: 4, fill: "#e5e7eb", radius: 2 }),
+        T({ x: 120, y: 480, w: 840, h: 100, text: "Định nghĩa:", fontSize: 32, color: "#9ca3af", weight: 700 }),
+        T({ x: 120, y: 520, w: 840, h: 120, text: "Phân tích, mổ xẻ dữ liệu hoặc bản chất của vấn đề để hiểu sâu sắc hơn.", fontSize: 44, color: "#1f2937", weight: 600, lineHeight: 1.4 }),
+        R({ x: 120, y: 680, w: 840, h: 180, fill: "#f9fafb", radius: 24 }),
+        T({ x: 150, y: 705, w: 780, h: 130, text: "Ví dụ: Researchers analyzed the survey data to identify key linguistic patterns.", fontSize: 34, color: "#374151", italic: true, lineHeight: 1.5 }),
+        T({ x: 120, y: 890, w: 840, h: 50, text: "Collocations: analyze data · critically analyze", fontSize: 30, color: "#6366f1", weight: 600 }),
+      ],
+    }),
   },
 ]
 
