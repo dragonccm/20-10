@@ -898,11 +898,11 @@ export default function CreativePage() {
                 <div>
                   <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-600 to-rose-600 px-3 py-0.5 text-xs font-semibold text-white shadow-sm">
                     <Sparkles className="h-3 w-3" />
-                    Canva Presets Sẵn Dùng
+                    Bộ sưu tập Mẫu Slide Tuyển chọn (8 Bộ 16:9 Sẵn Dùng)
                   </div>
-                  <h2 className="mt-2 text-lg font-bold text-slate-900">Mẫu slide Canva nguyên bản</h2>
+                  <h2 className="mt-2 text-lg font-bold text-slate-900">Mẫu slide Canva & Thư viện Quốc tế nguyên bản</h2>
                   <p className="mt-0.5 text-sm text-slate-600 max-w-2xl">
-                    Trọn bộ 10 slide thiết kế hoàn chỉnh từ Canva (đầy đủ đồ họa, sticker, tranh ảnh, font chữ & layout chuẩn). Mở trực tiếp 1 click để sửa từng thành phần.
+                    Trọn bộ 10 slide hoàn chỉnh (gồm 4 mẫu xuất từ Canva và 4 mẫu kinh điển từ SlidesCarnival). Đầy đủ tranh ảnh, sticker, bảng biểu, mốc thời gian và typography chuẩn 16:9. Mở trực tiếp 1 click để sửa từng thành phần.
                   </p>
                 </div>
               </div>
