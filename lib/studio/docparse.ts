@@ -394,7 +394,7 @@ async function parsePptx(file: Blob): Promise<Parsed> {
   return { kind: "pptx", text: parts.join("\n\n"), parts, ratio: cx / cy }
 }
 
-const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", bmp: "image/bmp" }
+const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", bmp: "image/bmp", svg: "image/svg+xml" }
 
 /** Full slide structure (text boxes with position and size, pictures, filled shapes) for editing. */
 export async function readPptxSlides(file: Blob, onProgress?: (i: number, n: number) => void): Promise<{ ratio: number; slides: RichSlide[] }> {
@@ -480,16 +480,18 @@ export async function readPptxSlides(file: Blob, onProgress?: (i: number, n: num
           await walk(node, inner)
           continue
         }
-        if (node.localName === "pic") {
-          const blip = first(node, "blip")
+        const blip = first(node, "blip")
+        if (blip) {
           const xf = xfrmOf(node) ?? box(node)
-          const t = blip ? r.get(blip.getAttributeNS(R_NS, "embed") ?? "")?.target : undefined
-          if (!xf || !t) continue
-          const m = await loadMedia(t)
-          if (!m) continue
-          const b = tf(xf)
-          slide.els.push({ kind: "image", x: b.x / cx, y: b.y / cy, w: b.w / cx, h: b.h / cy, src: m.src, nw: m.w, nh: m.h, alpha: m.alpha })
-          continue
+          const t = r.get(blip.getAttributeNS(R_NS, "embed") ?? "")?.target
+          if (xf && t) {
+            const m = await loadMedia(t)
+            if (m) {
+              const b = tf(xf)
+              slide.els.push({ kind: "image", x: b.x / cx, y: b.y / cy, w: b.w / cx, h: b.h / cy, src: m.src, nw: m.w, nh: m.h, alpha: m.alpha })
+              continue
+            }
+          }
         }
         if (node.localName !== "sp") continue
         const xf = box(node)

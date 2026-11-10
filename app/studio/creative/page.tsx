@@ -56,6 +56,7 @@ import { callAi } from "@/lib/studio/ai"
 import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studio/bgremove"
 import { cn } from "@/lib/utils"
 import { createSlideSet, slideSetPage, SLIDE_SETS } from "@/lib/studio/design"
+import { CANVA_DECKS, loadCanvaDeck, type CanvaDeckInfo } from "@/lib/studio/canva-templates"
 import {
   checkImageServerStatus,
   generateImageTask,
@@ -322,6 +323,20 @@ export default function CreativePage() {
       toast.success(`Đã nhập ${news.length} ${kind === "pptx" ? "slide" : "trang"} thành thiết kế sửa được.`)
     } catch (e) {
       toast.error((e as Error).message)
+    } finally {
+      setDeckBusy("")
+    }
+  }
+
+  const openCanvaPresetDeck = async (deckInfo: CanvaDeckInfo) => {
+    setDeckBusy(`Đang tải trọn bộ "${deckInfo.name}"...`)
+    try {
+      const news = await loadCanvaDeck(deckInfo.id)
+      if (!news.length) throw new Error("Không có slide nào trong mẫu này.")
+      openDeck(news)
+      toast.success(`Đã mở thành công ${news.length} slide mẫu "${deckInfo.name}".`)
+    } catch (e) {
+      toast.error((e as Error).message || "Không thể tải mẫu slide.")
     } finally {
       setDeckBusy("")
     }
@@ -838,22 +853,112 @@ export default function CreativePage() {
             ))}
           </div>
           {libraryTab === "slides" && (
-          <section id="slide-sets" className="mb-5 scroll-mt-4">
-            <h2 className="font-semibold text-slate-800">Bộ slide có sẵn</h2>
-            <p className="mt-1 text-sm text-slate-600">Chọn một bộ 16:9 rồi sửa từng trang trong cùng một bài.</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {SLIDE_SETS.map((set) => (
-                <button key={set.name} type="button" onClick={() => openDeck(createSlideSet(set))} className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-violet-400 hover:shadow-md">
-                  <div aria-hidden="true" className="grid h-44 place-items-center overflow-hidden p-2" style={{ background: set.paper }}>
-                    <Mini d={slideSetPage(set, 0)} maxW={260} maxH={146} />
+          <section id="slide-sets" className="mb-5 space-y-8 scroll-mt-4">
+            {/* Canva Showcase Presets */}
+            <div className="rounded-3xl bg-gradient-to-br from-amber-50/70 via-rose-50/40 to-violet-50/50 p-5 ring-1 ring-amber-200/60 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-600 to-rose-600 px-3 py-0.5 text-xs font-semibold text-white shadow-sm">
+                    <Sparkles className="h-3 w-3" />
+                    Canva Presets Sẵn Dùng
                   </div>
-                  <div className="border-t border-slate-100 px-4 py-3">
-                    <span className="block font-semibold text-slate-800">{set.name}</span>
-                    <span className="mt-1 block text-xs text-slate-600">{set.style} · {set.pages.length} trang · 16:9</span>
+                  <h2 className="mt-2 text-lg font-bold text-slate-900">Mẫu slide Canva nguyên bản</h2>
+                  <p className="mt-0.5 text-sm text-slate-600 max-w-2xl">
+                    Trọn bộ 10 slide thiết kế hoàn chỉnh từ Canva (đầy đủ đồ họa, sticker, tranh ảnh, font chữ & layout chuẩn). Mở trực tiếp 1 click để sửa từng thành phần.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                {CANVA_DECKS.map((deck) => (
+                  <div
+                    key={deck.id}
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg"
+                  >
+                    <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                      {deck.coverImage ? (
+                        <img
+                          src={deck.coverImage}
+                          alt={deck.name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div
+                          className="grid h-full place-items-center"
+                          style={{ background: deck.paper }}
+                        >
+                          <span className="font-semibold" style={{ color: deck.accent }}>{deck.name}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                      <div className="absolute top-2.5 left-2.5">
+                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                          {deck.category}
+                        </span>
+                      </div>
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="rounded-md bg-amber-500/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-sm">
+                          {deck.slidesCount} SLIDES
+                        </span>
+                      </div>
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                        <h3 className="text-base font-bold drop-shadow-sm">{deck.name}</h3>
+                        <p className="text-xs text-slate-200 drop-shadow-sm">{deck.subtitle}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-1 flex-col justify-between p-4">
+                      <div>
+                        <p className="text-xs leading-relaxed text-slate-600">
+                          {deck.description}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {deck.tags.map((t) => (
+                            <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                              #{t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <span className="text-xs text-slate-500 font-medium">Tỉ lệ 16:9 · Sửa tự do</span>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          className="gap-1.5 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white shadow-sm"
+                          onClick={() => openCanvaPresetDeck(deck)}
+                        >
+                          <Presentation className="h-3.5 w-3.5" />
+                          Mở trọn bộ {deck.slidesCount} slide
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </button>
-              ))}
+                ))}
+              </div>
             </div>
+
+            {/* Quick Generator Slide Sets */}
+            <div>
+              <h2 className="font-semibold text-slate-800">Bộ slide sinh nhanh theo phong cách</h2>
+              <p className="mt-1 text-sm text-slate-600">Chọn cấu trúc dàn bài và phối màu sẵn để sinh trọn bộ các trang thuyết trình 16:9.</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {SLIDE_SETS.map((set) => (
+                  <button key={set.name} type="button" onClick={() => openDeck(createSlideSet(set))} className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-violet-400 hover:shadow-md">
+                    <div aria-hidden="true" className="grid h-44 place-items-center overflow-hidden p-2" style={{ background: set.paper }}>
+                      <Mini d={slideSetPage(set, 0)} maxW={260} maxH={146} />
+                    </div>
+                    <div className="border-t border-slate-100 px-4 py-3">
+                      <span className="block font-semibold text-slate-800">{set.name}</span>
+                      <span className="mt-1 block text-xs text-slate-600">{set.style} · {set.pages.length} trang · 16:9</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <details className="mt-3 text-sm text-slate-600">
               <summary className="cursor-pointer font-medium">Tìm thêm mẫu miễn phí</summary>
               <p className="mt-2">Mở thư viện bên ngoài, chọn mẫu và tải PowerPoint nếu mẫu hỗ trợ. Sau đó dùng nút nhập bên dưới. Giữ phần ghi công theo điều khoản của mẫu.</p>

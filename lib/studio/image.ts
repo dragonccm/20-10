@@ -21,7 +21,7 @@ export async function fileToDataUrl(file: File, max = 1600, quality = 0.85, keep
     c.width = Math.round(img.width * s)
     c.height = Math.round(img.height * s)
     const ctx = c.getContext("2d", { willReadFrequently: keepAlpha })!
-    if (keepAlpha && /image\/(png|webp|gif)/.test(file.type)) {
+    if (keepAlpha && /image\/(png|webp|gif|svg)/.test(file.type)) {
       ctx.drawImage(img, 0, 0, c.width, c.height)
       if (hasTransparency(ctx, c.width, c.height)) return { src: c.toDataURL("image/png"), w: c.width, h: c.height, alpha: true }
       ctx.clearRect(0, 0, c.width, c.height)
