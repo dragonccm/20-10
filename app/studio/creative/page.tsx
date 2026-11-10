@@ -18,6 +18,7 @@ import {
   CopyPlus,
   Crop as CropIcon,
   Download,
+  ExternalLink,
   FlipHorizontal2,
   FlipVertical2,
   ImagePlus,
@@ -57,6 +58,8 @@ import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studi
 import { cn } from "@/lib/utils"
 import { createSlideSet, slideSetPage, SLIDE_SETS } from "@/lib/studio/design"
 import { CANVA_DECKS, loadCanvaDeck, type CanvaDeckInfo } from "@/lib/studio/canva-templates"
+import { EnhancedSlideShow } from "@/components/studio/presentation-viewer"
+import { LiveEmbedModal } from "@/components/studio/embed-viewer"
 import {
   checkImageServerStatus,
   generateImageTask,
@@ -208,6 +211,7 @@ export default function CreativePage() {
   const [urlInput, setUrlInput] = useState("")
   const [exportingDeck, setExportingDeck] = useState(false)
   const [presenting, setPresenting] = useState(false)
+  const [showLiveEmbed, setShowLiveEmbed] = useState(false)
   const [, setHistTick] = useState(0)
   const stageWrap = useRef<HTMLDivElement>(null)
   const textEditor = useRef<HTMLLabelElement>(null)
@@ -892,6 +896,33 @@ export default function CreativePage() {
           </div>
           {libraryTab === "slides" && (
           <section id="slide-sets" className="mb-5 space-y-8 scroll-mt-4">
+            {/* Live Embed Option */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 p-4 ring-1 ring-emerald-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                  <ExternalLink className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    Nhúng Trực Tiếp Google Slides & Canva
+                    <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      100% Hiệu Ứng Gốc
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-600">
+                    Bạn muốn giữ nguyên 100% hoạt họa Morph, âm thanh, video và chuyển cảnh 3D của bài thuyết trình? Nhúng và trình chiếu trực tiếp không qua chuyển đổi.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => setShowLiveEmbed(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm text-xs shrink-0"
+              >
+                Mở Trình chiếu Nhúng
+              </Button>
+            </div>
+
             {/* Canva Showcase Presets */}
             <div className="rounded-3xl bg-gradient-to-br from-amber-50/70 via-rose-50/40 to-violet-50/50 p-5 ring-1 ring-amber-200/60 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1354,7 +1385,8 @@ export default function CreativePage() {
             <Card className="mb-3 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="mr-auto font-medium text-slate-800">{deck.name} · Trang {pageIndex + 1}/{pages.length}</h2>
-                <Button size="sm" variant="outline" icon={Presentation} onClick={() => setPresenting(true)}>Trình chiếu</Button>
+                <Button size="sm" variant="outline" icon={Presentation} onClick={() => setPresenting(true)}>Trình chiếu (Canva Mode)</Button>
+                <Button size="sm" variant="outline" icon={ExternalLink} onClick={() => setShowLiveEmbed(true)} title="Nhúng trực tiếp từ Google Slides hoặc Canva để giữ 100% hiệu ứng gốc">Nhúng GSlides / Canva</Button>
                 <Button size="sm" icon={Download} loading={exportingDeck} onClick={exportDeck}>Tải PowerPoint</Button>
                 <Button size="sm" variant="outline" disabled={pageIndex <= 0} onClick={() => movePage(-1)}>Đưa lên trước</Button>
                 <Button size="sm" variant="outline" disabled={pageIndex >= pages.length - 1} onClick={() => movePage(1)}>Đưa ra sau</Button>
@@ -1369,7 +1401,8 @@ export default function CreativePage() {
               </div>
             </Card>
           )}
-          {presenting && deck && <SlideShow pages={pages} start={pageIndex} onClose={() => setPresenting(false)} />}
+          {presenting && deck && <EnhancedSlideShow pages={pages} start={pageIndex} onClose={() => setPresenting(false)} />}
+          <LiveEmbedModal isOpen={showLiveEmbed} onClose={() => setShowLiveEmbed(false)} />
           {/* Top toolbar */}
           <Card className="mb-4 flex flex-wrap items-center gap-2 p-2">
             <label className="flex min-w-0 items-center gap-2">
@@ -2013,53 +2046,6 @@ function ElView({ el, scale }: { el: El; scale: number }) {
     >
       {el.text}
     </div>
-  )
-}
-
-function SlideShow({ pages, start, onClose }: { pages: Design[]; start: number; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
-  const stage = useRef<HTMLDivElement>(null)
-  const [index, setIndex] = useState(start)
-  const [size, setSize] = useState({ w: 0, h: 0 })
-
-  useEffect(() => {
-    dialog.current?.showModal()
-    const node = stage.current
-    if (!node) return
-    const observer = new ResizeObserver(([entry]) => setSize({ w: entry.contentRect.width, h: entry.contentRect.height }))
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
-  const move = (step: number) => setIndex((i) => Math.max(0, Math.min(pages.length - 1, i + step)))
-  const page = pages[index]
-
-  return (
-    <dialog
-      ref={dialog}
-      aria-label="Trình chiếu slide"
-      onCancel={onClose}
-      onKeyDown={(event) => {
-        event.stopPropagation()
-        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-          event.preventDefault()
-          move(event.key === "ArrowLeft" ? -1 : 1)
-        }
-      }}
-      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none bg-slate-950 p-4 text-white backdrop:bg-slate-950"
-    >
-      <div className="flex h-full flex-col gap-3">
-        <div ref={stage} className="grid min-h-0 flex-1 place-items-center overflow-hidden">
-          {page && size.w > 0 && size.h > 0 && <Mini d={page} maxW={size.w} maxH={size.h} />}
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button size="sm" variant="outline" disabled={index === 0} onClick={() => move(-1)}>Trang trước</Button>
-          <span className="px-2 text-sm" aria-live="polite">{index + 1} / {pages.length}</span>
-          <Button size="sm" variant="outline" disabled={index === pages.length - 1} onClick={() => move(1)}>Trang sau</Button>
-          <Button size="sm" onClick={onClose}>Thoát trình chiếu</Button>
-        </div>
-      </div>
-    </dialog>
   )
 }
 
