@@ -75,6 +75,6 @@ test('all inline Tiny scripts parse and the flower frame remains a valid string'
   assert.doesNotThrow(()=>new vm.Script(body),attrs);count++
  }
  assert.equal(count,15)
- const flower=html.match(/const flowerDoc = ("[^\n]+?");/)
+ const flower=html.match(/const flowerDoc = ("(?:\\.|[^"\\])*");/)
  assert.ok(flower);assert.ok(JSON.parse(flower[1]).endsWith('</body></html>'))
 })
