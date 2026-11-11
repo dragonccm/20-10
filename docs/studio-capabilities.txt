@@ -1,0 +1,75 @@
+Bloom Studio — capability and source review
+Reviewed: 2026-11-11 (Asia/Ho_Chi_Minh)
+
+Scope confirmed by the user: 20 original templates per category, all twelve
+categories, delivered in stages. Canva links are references, not bundled assets.
+
+Source review:
+https://www.canva.com/visual-suite/
+https://www.canva.com/help/layer-group-align/
+https://www.canva.com/help/finding-and-arranging-layers/
+https://www.canva.com/help/download-file-types/
+https://www.canva.com/policies/content-license-agreement/
+https://www.canva.dev/docs/apps/rest-apis/reference/autofills/
+https://www.slidescarnival.com/terms-of-use
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The research used public first-party documentation, not access to a user's Canva
+account. Free use and permission to redistribute editable template content are
+separate questions. Previously bundled third-party template files are preserved
+locally under reference-material and excluded from deployment. User drafts in
+browser storage are not deleted, but drafts referencing the removed public
+third-party assets need original user-supplied media to render again.
+
+Native collection (20 each / 240 in total):
+- CV: 20 themes, 7 layout families; structured editing, PDF printing, JSON backup.
+- Presentations: 20 original five-page decks; layers, PNG/JPG, editable PPTX.
+- Social: 20 original post/story/banner/thumbnail layouts; native canvas editing.
+- Photos: 20 original frame/collage layouts; replace frames with personal uploads,
+  crop, filters and background removal using the existing photo tools.
+- Print: 20 original posters/cards/menus/certificates/planners; PNG/JPG, browser
+  printing to PDF. No CMYK/bleed prepress guarantee.
+- Docs: 20 document starters in Writing Studio; rich text, AI editing, Word/PDF.
+- Whiteboard: 20 finite-board editable diagrams/planners; blocks, connectors as
+  independent shape layers, zoom, PNG/JPG. Not an infinite collaborative board.
+- Sheets: 20 datasets; cell editing, arithmetic and range functions, CSV/JSON.
+  Not full Excel compatibility, XLSX import, pivot tables, or real-time sharing.
+- Code: 20 self-contained HTML/CSS/JS starter apps; source editing, isolated live
+  preview, HTML download. Preview blocks network requests and form submission.
+- Websites: 20 standalone HTML starters; source editing, preview, HTML download.
+  Publishing is manual; no invented backend or automatic hosting provisioning.
+- Email: 20 inline-style HTML email starters; source editing, preview, HTML export.
+  No sending service, recipient import, tracking or deliverability claims.
+- Video: 20 title-motion presets; text/color/aspect/duration editing, preview and
+  browser video recording (WebM or MP4 depending on codec support).
+  No audio tracks, uploaded clip timeline, or multi-track compositor yet.
+
+Customization comparison:
+Canva documents grouping, multiple selection, locks, ordering/alignment, typography,
+media replacement/cropping, page formats and several export types. Bloom's current
+canvas supports single-layer editing, layer ordering, alignment, rotation, crop,
+filters, locked layers, undo/redo, page ordering and explicit AI preview/apply.
+Multi-select/grouping, richer connector editing and batch resizing remain advanced
+work for subsequent releases rather than being represented by non-working buttons.
+
+AI:
+Canvas editing now proposes validated operations for the current page or selected
+layer. It preserves unrelated layers, blocks locked-layer edits, excludes image
+bytes and source URLs from the request, checks stale proposals, and applies only
+on user action. Undo restores the previous page. Code/web/email have isolated HTML
+proposal previews and explicit apply/undo. Existing Writing and Career AI tools
+remain available. There is no Canva Connect/autofill integration or claim of free
+access to paid Canva APIs.
+
+Performance work:
+Only the active category's 20 cards are mounted. Original templates require no
+network-loaded deck JSON or bundled third-party fonts. Presentation/embed viewers,
+CV previews and AI validation are loaded on demand. Decoded images use a bounded
+cache. Canvas drag updates use animation frames. Removed global console-clearing
+intervals and input-blocking handlers. Tiny's embedded media is externalized with
+byte-for-byte checks, reducing the initial HTML while keeping the media unchanged.
+
+Next advanced release candidates:
+Multi-select/groups, full board panning/connectors, branded styles, multi-page AI
+change plans, richer formula/XLSX support, uploaded video/audio timeline, and native
+site publishing after the hosting/ownership workflow has been specified.

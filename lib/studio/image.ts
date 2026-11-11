@@ -1,12 +1,19 @@
 "use client"
 
-export const loadImg = (src: string) =>
-  new Promise<HTMLImageElement>((res, rej) => {
+const imageCache = new Map<string, Promise<HTMLImageElement>>()
+export function loadImg(src: string): Promise<HTMLImageElement> {
+  const hit = imageCache.get(src)
+  if (hit) { imageCache.delete(src); imageCache.set(src, hit); return hit }
+  const pending = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image()
-    img.onload = () => res(img)
-    img.onerror = rej
+    img.onload = () => resolve(img)
+    img.onerror = () => { imageCache.delete(src); reject(new Error("Không tải được ảnh.")) }
     img.src = src
   })
+  imageCache.set(src, pending)
+  if (imageCache.size > 40) imageCache.delete(imageCache.keys().next().value!)
+  return pending
+}
 
 /**
  * Downscale a picked photo to a data URL (keeps storage and upload small).

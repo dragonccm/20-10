@@ -12,6 +12,7 @@ export type El = {
   w: number
   h: number
   opacity: number
+  locked?: boolean
   rot?: number
   shadow?: boolean
   // text
@@ -41,7 +42,7 @@ export type El = {
   cutout?: boolean
   origSrc?: string
 }
-export type Design = { id: string; name: string; w: number; h: number; bg: Bg; els: El[]; updatedAt: number; deck?: { id: string; name: string; revision?: number } }
+export type Design = { provenance?: { kind: "bloom" | "user" | "canva" | "third-party"; templateId?: string; license?: string }; id: string; name: string; w: number; h: number; bg: Bg; els: El[]; updatedAt: number; deck?: { id: string; name: string; revision?: number; source?: "bloom" | "canva" | "slidescarnival" } }
 export type DesignDraft = Omit<Design, "id" | "updatedAt">
 
 export const FONTS = {

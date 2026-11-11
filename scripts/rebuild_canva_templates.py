@@ -1,6 +1,8 @@
 """Rebuild editable template layers from PPTX, preserving DrawingML artwork.
 
 Usage: python3 scripts/rebuild_canva_templates.py
+Local reference conversion only; output is excluded from deployment.
+Do not redistribute third-party templates without the required rights.
 Text stays editable; each non-text shape is an independent SVG layer, not a
 flattened slide. Source fonts embedded in the PPTX are reused by the browser.
 """
@@ -13,7 +15,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'public/templates/canva'
+OUT = ROOT / 'reference-material/canva'
 NS = {'p': 'http://schemas.openxmlformats.org/presentationml/2006/main', 'a': 'http://schemas.openxmlformats.org/drawingml/2006/main', 'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
 A = '{' + NS['a'] + '}'
 R = '{' + NS['r'] + '}'

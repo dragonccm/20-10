@@ -1,3 +1,4 @@
+import { designActionSchema } from "@/lib/studio/design-actions"
 // AI gateway: forwards a whitelisted task to an OpenAI-compatible endpoint (e.g. GLM).
 // Configure with AI_BASE_URL, AI_API_KEY, AI_MODEL. Document content is never logged.
 
@@ -140,6 +141,21 @@ function build(task: string, b: Record<string, unknown>): Spec | null {
           '"score": 3 = hỗ trợ trực tiếp nhận định, 2 = liên quan rõ, 1 = liên quan một phần, 0 = không liên quan. ' +
           '"reason": 1 câu tiếng Việt nêu bài này nói về gì và hỗ trợ ý nào; nếu không có tóm tắt thì nói rõ là chỉ đánh giá theo tiêu đề. ' +
           "Không thêm bài nào ngoài danh sách, không bịa nội dung bài.",
+        user: text,
+      }
+    case "html-edit":
+      return { json: true, system: "Bạn là trợ lý chỉnh HTML/CSS/JS. Nhận mã và yêu cầu, trả JSON {html: toàn bộ mã đã chỉnh, summary: mô tả ngắn tiếng Việt}. Giữ nội dung không được yêu cầu. Mã tự chứa, không tài nguyên ngoài, không kết nối mạng hay thu thập dữ liệu. Với email: dùng bảng và CSS inline, không JavaScript. Với website/code: HTML có lang vi, viewport và accessibility. Không bịa backend gửi thư, thanh toán hay dịch vụ thực tế.", user: text }
+    case "design-action":
+      return {
+        json: true,
+        system: "Bạn là trợ lý biên tập thiết kế. Chỉ trả JSON {summary: mô tả ngắn tiếng Việt, operations: [...]} . " +
+          "Ngữ cảnh gồm w,h,bg và els có id cố định. Không tạo lại toàn bộ trang. " +
+          "Các lệnh hợp lệ: {op:'update',id,changes:{...}}, {op:'remove',id}, {op:'add',element:{type:'text|rect|circle',x,y,w,h,...}}, {op:'background',from:'#rrggbb',to:'#rrggbb',angle:135}. " +
+          "changes chỉ được gồm x,y,w,h,rot,opacity,text,fontSize,color,fill,weight,align,font,italic,lineHeight,radius. Không thêm src, ảnh, id, URL, mã hoặc thuộc tính khác. " +
+          "Nếu có selectedId: CHỈ update/remove đúng id đó, không thêm lớp hay đổi nền. Không sửa bất kỳ lớp locked=true nào. " +
+          "Giữ nguyên nội dung không được yêu cầu, tọa độ theo pixel; không làm chữ tràn trang; màu #rrggbb; tối đa 80 lệnh. " +
+          "Với yêu cầu dịch/sửa chính tả/rút gọn, chỉ sửa text của các lớp văn bản liên quan. Với phối màu, chỉ sửa color/fill/nền cần thiết. " +
+          "Với yêu cầu bố cục, giữ ảnh và chữ, chỉ thay vị trí/kích thước liên quan. Không tự xóa hình trang trí nếu không được yêu cầu.",
         user: text,
       }
     case "design": {
@@ -359,7 +375,7 @@ export async function POST(req: Request) {
         ],
         ...(useJsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.any([req.signal, AbortSignal.timeout(120000)]),
     })
 
   let res: Response
@@ -379,6 +395,7 @@ export async function POST(req: Request) {
   if (spec.json) {
     const parsed = parseJson(content)
     if (!parsed) return error("AI trả về dữ liệu không đúng định dạng, thử lại nhé.", 502)
+    if (body.task === "design-action" && !designActionSchema.safeParse(parsed).success) return error("AI đề xuất thao tác chưa hợp lệ. Hãy thử lại.", 502)
     return Response.json(parsed)
   }
   return Response.json({ text: content.trim() })

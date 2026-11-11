@@ -17,6 +17,8 @@ export type AiTask =
   | "cite-queries"
   | "cite-rank"
   | "design"
+  | "design-action"
+  | "html-edit"
   | "cv-theme"
   | "doc-review"
   | "slide-script"
@@ -32,9 +34,10 @@ export type GrammarIssue = {
   explanation: string
 }
 
-export async function callAi<T = { text: string }>(task: AiTask, payload: Record<string, unknown>): Promise<T> {
+export async function callAi<T = { text: string }>(task: AiTask, payload: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   const res = await fetch("/api/ai", {
     method: "POST",
+    signal,
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ task, ...payload }),
   })

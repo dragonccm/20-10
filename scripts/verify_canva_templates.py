@@ -7,7 +7,7 @@ import hashlib,json,re,sys,posixpath
 from pathlib import Path
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
-ROOT=Path(__file__).resolve().parents[1];PUBLIC=ROOT/'public';BASE=PUBLIC/'templates/canva'
+ROOT=Path(__file__).resolve().parents[1];PUBLIC=ROOT/'public';BASE=ROOT/'reference-material/canva'
 ns={'p':'http://schemas.openxmlformats.org/presentationml/2006/main','a':'http://schemas.openxmlformats.org/drawingml/2006/main','r':'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
 sources=json.loads((BASE/'sources.json').read_text());total=0
 for path in BASE.glob('deck-*.json'):
@@ -17,12 +17,12 @@ for path in BASE.glob('deck-*.json'):
   for el in slide['els']:
    assert el['w']>0 and el['h']>0,(path,el)
    if el.get('src','').startswith('/'):
-    asset=PUBLIC/el['src'].lstrip('/');assert asset.is_file(),asset
+    asset=BASE/el['src'].removeprefix('/templates/canva/');assert asset.is_file(),asset
     if asset.suffix=='.svg':
      ET.fromstring(asset.read_bytes())
      assert not re.search(r'(?:href|src)="https?://',asset.read_text()),asset
   total+=1
-for url in re.findall(r'url\(["\']?(/[^)"\']+)',(BASE/'fonts.css').read_text()):assert (PUBLIC/url.lstrip('/')).is_file(),url
+for url in re.findall(r'url\(["\']?(/[^)"\']+)',(BASE/'fonts.css').read_text()):assert (BASE/url.removeprefix('/templates/canva/')).is_file(),url
 for arg in sys.argv[1:]:
  path=Path(arg);key=hashlib.sha256(path.read_bytes()).hexdigest();assert key in sources,path
  slides=json.loads((BASE/(sources[key]+'.json')).read_text())

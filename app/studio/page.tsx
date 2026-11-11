@@ -15,7 +15,7 @@ const TASKS: Task[] = [
   { href: "/studio/documents", icon: FileUp, title: "Tải tài liệu lên cho AI đọc", desc: "Essay, slide, CV, PDF, ảnh chụp", tint: "bg-indigo-100 text-indigo-600" },
   { href: "/studio/korean", icon: Languages, title: "Ôn ngoại ngữ (Hàn & Anh)", desc: "Thẻ lật, Cambridge AWL, nghe phát âm, sửa câu", tint: "bg-violet-100 text-violet-600" },
   { href: "/studio/career", icon: Briefcase, title: "Làm CV, luyện phỏng vấn", desc: "Nhiều mẫu đẹp, xuất PDF", tint: "bg-emerald-100 text-emerald-600" },
-  { href: "/studio/creative", icon: Palette, title: "Làm poster, slide, thiệp", desc: "Từ mẫu có sẵn hoặc nhờ AI", tint: "bg-pink-100 text-pink-600" },
+  { href: "/studio/creative", icon: Palette, title: "Thiết kế & công cụ sáng tạo", desc: "240 mẫu · 12 loại · Có trợ lý AI", tint: "bg-pink-100 text-pink-600" },
 ]
 
 type Resume = { href: string; icon: LucideIcon; label: string; detail: string }

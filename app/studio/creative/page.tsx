@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import dynamic from "next/dynamic"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
@@ -9,6 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  LockKeyhole,
+  UnlockKeyhole,
   Search,
   ZoomIn,
   AlignCenter,
@@ -54,19 +57,19 @@ import {
 } from "lucide-react"
 import { AiNotice, Button, Card, Input, Label, PageHeader, Select, Textarea } from "@/components/studio/ui"
 import { TOOLS } from "@/lib/studio/tools"
-import { downloadFile, readLS, writeLS, safeFileName, uid } from "@/lib/studio/storage"
+import { downloadFile, printHtml, readLS, writeLS, safeFileName, uid } from "@/lib/studio/storage"
 import { documentToDesigns, loadDesigns, storeDesigns } from "@/lib/studio/handoff"
 import { fileKind } from "@/lib/studio/docparse"
 import { fileToDataUrl, loadImg } from "@/lib/studio/image"
-import { FULL_CROP, NO_FILTER, PRESETS, cssFilter, processImage, withDefaults, type Crop, type Filters } from "@/lib/studio/imagefx"
+import { coverCrop, FULL_CROP, NO_FILTER, PRESETS, cssFilter, processImage, withDefaults, type Crop, type Filters } from "@/lib/studio/imagefx"
 import { BGS, FONTS, fontFamily, SIZES, TEMPLATES, TEMPLATE_CATS, bgCss, blank, designForAi, fitText, wrap, sanitizeDesign, shape, text, type Design, type DesignDraft, type El, type TemplateCat } from "@/lib/studio/design"
 import { callAi } from "@/lib/studio/ai"
 import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studio/bgremove"
 import { cn } from "@/lib/utils"
 import { createSlideSet, slideSetPage, SLIDE_SETS } from "@/lib/studio/design"
-import { CANVA_DECKS, loadCanvaDeck, type CanvaDeckInfo } from "@/lib/studio/canva-templates"
-import { EnhancedSlideShow } from "@/components/studio/presentation-viewer"
-import { LiveEmbedModal } from "@/components/studio/embed-viewer"
+import { TemplateHub } from "@/components/studio/template-hub"
+const EnhancedSlideShow = dynamic(() => import("@/components/studio/presentation-viewer").then((m) => m.EnhancedSlideShow), { ssr: false })
+const LiveEmbedModal = dynamic(() => import("@/components/studio/embed-viewer").then((m) => m.LiveEmbedModal), { ssr: false })
 import {
   checkImageServerStatus,
   generateImageTask,
@@ -217,6 +220,9 @@ export default function CreativePage() {
   const [aiBusy, setAiBusy] = useState<"" | "create" | "edit">("")
   const [editOpen, setEditOpen] = useState(false)
   const [editPrompt, setEditPrompt] = useState("")
+  const [aiScope, setAiScope] = useState<"page" | "selection">("page")
+  const [aiProposal, setAiProposal] = useState<{ before: Design; after: Design; summary: string; operations: number } | null>(null)
+  const aiAbort = useRef<AbortController | null>(null)
   const [bgBusy, setBgBusy] = useState<"" | "ai" | "flat">("")
   const [bgStatus, setBgStatus] = useState("")
   const [flatTol, setFlatTol] = useState(40)
@@ -235,6 +241,7 @@ export default function CreativePage() {
   const stageRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
+  const replaceImage = useRef<string | null>(null)
   const quotaWarned = useRef(false)
   const past = useRef<Design[]>([])
   const future = useRef<Design[]>([])
@@ -243,8 +250,9 @@ export default function CreativePage() {
   useEffect(() => {
     loadDesigns().then((ds) => {
       setDesigns(ds)
-      setCurId(ds.find((d) => d.id === readLS<string | null>("bloom.creative.active", null))?.id ?? ds[0]?.id ?? null)
-      setShowNew(!ds.length)
+      const active = ds.find((d) => d.id === readLS<string | null>("bloom.creative.active", null)) ?? ds[0]
+      setCurId(active?.id ?? null)
+      setShowNew(!!new URLSearchParams(window.location.search).get("library") || !ds.length || !!active?.els.some((el) => el.src?.startsWith("/templates/canva/")))
       setLoaded(true)
     })
   }, [])
@@ -265,7 +273,7 @@ export default function CreativePage() {
 
   const cur = designs.find((d) => d.id === curId) ?? null
   const deck = cur?.deck
-  const legacyTemplate = deck && !deck.revision ? CANVA_DECKS.find((t) => t.name === deck.name) : undefined
+  const legacyAssets = cur?.els.some((e) => e.src?.startsWith("/templates/canva/")) ?? false
   const pages = deck ? designs.filter((d) => d.deck?.id === deck.id) : []
   const pageIndex = pages.findIndex((d) => d.id === curId)
   const curRef = useRef(cur)
@@ -295,7 +303,7 @@ export default function CreativePage() {
     [curId, pushHistory],
   )
   const updateEl = useCallback(
-    (id: string, patch: Partial<El>, mode: HistoryMode = "throttle") => update((d) => ({ ...d, els: d.els.map((e) => (e.id === id ? { ...e, ...patch } : e)) }), mode),
+    (id: string, patch: Partial<El>, mode: HistoryMode = "throttle") => update((d) => ({ ...d, els: d.els.map((e) => (e.id === id && (!e.locked || patch.locked !== undefined) ? { ...e, ...patch } : e)) }), mode),
     [update],
   )
 
@@ -338,6 +346,15 @@ export default function CreativePage() {
   }
 
   const importDeck = async (file: File) => {
+    if (file.name.toLowerCase().endsWith(".json")) {
+      try {
+        if (file.size > 20 * 1024 * 1024) throw new Error("Bản sao lưu quá lớn (tối đa 20 MB).")
+        const { parseDesignBackup } = await import("@/lib/studio/design-backup")
+        const pages = parseDesignBackup(JSON.parse(await file.text()))
+        openDeck(pages); toast.success(`Đã khôi phục ${pages.length} trang từ JSON.`)
+      } catch (error) { toast.error((error as Error).message) }
+      return
+    }
     const kind = fileKind(file.name, file.type)
     if (kind !== "pptx" && kind !== "pdf") return toast.error("Hãy chọn tệp PowerPoint (.pptx) hoặc PDF.")
     setDeckBusy("Đang đọc tệp...")
@@ -391,20 +408,6 @@ export default function CreativePage() {
     }
   }
 
-  const openCanvaPresetDeck = async (deckInfo: CanvaDeckInfo) => {
-    setDeckBusy(`Đang tải trọn bộ "${deckInfo.name}"...`)
-    try {
-      const news = await loadCanvaDeck(deckInfo.id)
-      if (!news.length) throw new Error("Không có slide nào trong mẫu này.")
-      openDeck(news)
-      toast.success(`Đã mở thành công ${news.length} slide mẫu "${deckInfo.name}".`)
-    } catch (e) {
-      toast.error((e as Error).message || "Không thể tải mẫu slide.")
-    } finally {
-      setDeckBusy("")
-    }
-  }
-
   const addEl = (el: El, center = true) => {
     setToolsOpen(false)
     if (!cur) return
@@ -413,10 +416,10 @@ export default function CreativePage() {
   }
 
   const removeSel = useCallback(() => {
-    if (!sel) return
+    if (!sel || selected?.locked) return
     update((d) => ({ ...d, els: d.els.filter((e) => e.id !== sel) }), "push")
     setSel(null)
-  }, [sel, update])
+  }, [sel, selected?.locked, update])
 
   const duplicateSel = useCallback(() => {
     if (!selected) return
@@ -548,6 +551,7 @@ export default function CreativePage() {
       }
       window.removeEventListener("pointerup", release)
       if (released) setSel(el.id)
+      else if (el.locked) setSel(el.id)
       else startDrag(event, el, "move")
       return
     }
@@ -559,7 +563,7 @@ export default function CreativePage() {
     e.stopPropagation()
     e.preventDefault()
     setSel(el.id)
-    if (!cur) return
+    if (!cur || el.locked) return
     let didPush = false
     const sx = e.clientX
     const sy = e.clientY
@@ -771,9 +775,7 @@ export default function CreativePage() {
   const setAsBackground = async (el: El) => {
     if (!cur) return
     const { nw, nh } = await natural(el)
-    const pageR = cur.w / cur.h
-    const imgR = nw / nh
-    const crop: Crop = imgR > pageR ? { x: (1 - pageR / imgR) / 2, y: 0, w: pageR / imgR, h: 1 } : { x: 0, y: (1 - imgR / pageR) / 2, w: 1, h: imgR / pageR }
+    const crop = coverCrop(nw, nh, cur.w, cur.h)
     update((d) => {
       const rest = d.els.filter((e) => e.id !== el.id)
       return { ...d, els: [{ ...el, x: 0, y: 0, w: d.w, h: d.h, rot: 0, radius: 0, crop, nw, nh }, ...rest] }
@@ -894,25 +896,28 @@ export default function CreativePage() {
   }
 
   const aiEdit = async () => {
-    if (!cur) return
-    if (!editPrompt.trim()) return toast.info("Hãy nói AI cần chỉnh gì, ví dụ: đổi sang tông hồng pastel.")
-    setAiBusy("edit")
+    if (!cur || aiBusy) return
+    if (!editPrompt.trim()) return toast.info("Hãy nói điều bạn muốn chỉnh.")
+    if (legacyAssets || cur.deck?.source === "canva") return toast.info("Hãy dùng mẫu Bloom hoặc thiết kế của bạn để chỉnh bằng AI.")
+    if (aiScope === "selection" && !selected) return toast.info("Chọn một thành phần trên trang trước nhé.")
+    if (aiScope === "selection" && selected?.locked) return toast.info("Mở khóa thành phần trước khi nhờ AI chỉnh.")
+    const { designContext, applyDesignAction } = await import("@/lib/studio/design-actions")
+    const before = cur
+    const selectedId = aiScope === "selection" ? selected!.id : undefined
+    const input = JSON.stringify({ request: editPrompt.trim(), design: designContext(before, selectedId) })
+    if (input.length > 23500) return toast.info("Trang này quá nhiều nội dung. Hãy chọn chỉnh một thành phần hoặc rút gọn yêu cầu.")
+    setAiBusy("edit"); setAiProposal(null)
+    const controller = new AbortController(); aiAbort.current = controller
     try {
-      const brief = await imageBrief(cur.els)
-      const prompt = `Chỉnh sửa thiết kế hiện có. Yêu cầu: ${editPrompt.trim()}\nGiữ nguyên kích thước w=${cur.w}, h=${cur.h}.${brief.text}\nThiết kế hiện tại (JSON):\n${JSON.stringify(designForAi(cur))}`
-      const res = await callAi<unknown>("design", { text: prompt, images: brief.images })
-      const raw = sanitizeDesign(res, cur)
-      if (!raw) throw new Error("AI chưa chỉnh được, thử nói cụ thể hơn nhé.")
-      const d = fitText(raw)
-      update((x) => ({ ...x, bg: d.bg, els: d.els }), "push")
-      setSel(null)
-      toast.success("Đã chỉnh theo yêu cầu. Chưa ưng thì bấm Hoàn tác (Ctrl+Z).")
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setAiBusy("")
-    }
+      const result = await callAi<unknown>("design-action", { text: input }, controller.signal)
+      const { design: after, action } = applyDesignAction(before, result, { selectedId, idFactory: uid })
+      setAiProposal({ before, after, summary: action.summary, operations: action.operations.length })
+    } catch (error) {
+      if (!controller.signal.aborted) toast.error((error as Error).message || "AI chưa tạo được đề xuất hợp lệ.")
+    } finally { setAiBusy(""); aiAbort.current = null }
   }
+
+  useEffect(() => () => aiAbort.current?.abort(), [])
 
   useEffect(() => {
     document.getElementById("studio-scroll")?.scrollTo({ top: 0 })
@@ -937,6 +942,12 @@ export default function CreativePage() {
             <Button variant="ghost" onClick={() => exportAs("image/png")}>Ảnh PNG</Button>
             <Button variant="ghost" onClick={() => exportAs("image/jpeg")}>Ảnh JPG</Button>
             {deck && <Button variant="ghost" loading={exportingDeck} onClick={exportDeck}>PowerPoint (.pptx)</Button>}
+            <Button variant="ghost" onClick={async () => { try {
+              const blob = await renderDesign(cur, "image/png")
+              const data = await new Promise<string>((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.readAsDataURL(blob) })
+              printHtml(cur.name, `<img src="${data}" alt="Thiết kế" />`, "@page{margin:10mm}body{margin:0;display:flex;justify-content:center}img{max-width:100%;height:auto;object-fit:contain}")
+            } catch { toast.error("Không thể chuẩn bị bản in.") } }}>In / Lưu PDF</Button>
+            <Button variant="ghost" onClick={() => downloadFile(`${safeFileName(cur.name)}.json`, JSON.stringify(cur, null, 2), "application/json")}>Dữ liệu thiết kế JSON</Button>
           </div></details>
         </>}
         <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) openPhoto(f); e.target.value = "" }} />
@@ -946,7 +957,7 @@ export default function CreativePage() {
         <Card className="mb-5 p-4">
           <div role="group" aria-label="Cách bắt đầu thiết kế" className="mb-5 flex flex-wrap gap-2">
             {([
-              ["slides", "Bộ slide"],
+              ["slides", "Kho mẫu · 12 loại"],
               ["single", "Mẫu lẻ & trang trống"],
               ["ai", "Tạo bằng AI"],
               ["imagegen", "Vẽ ảnh AI (Imagen)"],
@@ -957,137 +968,7 @@ export default function CreativePage() {
               </Button>
             ))}
           </div>
-          {libraryTab === "slides" && (
-          <section id="slide-sets" className="mb-5 space-y-8 scroll-mt-4">
-            {/* Live Embed Option */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 p-4 ring-1 ring-emerald-200 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                  <ExternalLink className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    Nhúng Trực Tiếp Google Slides & Canva
-                    <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      Trình chiếu từ nguồn
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-600">
-                    Bạn muốn giữ nguyên 100% hoạt họa Morph, âm thanh, video và chuyển cảnh 3D của bài thuyết trình? Nhúng và trình chiếu trực tiếp không qua chuyển đổi.
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="primary"
-                onClick={() => setShowLiveEmbed(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm text-xs shrink-0"
-              >
-                Mở Trình chiếu Nhúng
-              </Button>
-            </div>
-
-            {/* Canva Showcase Presets */}
-            <div className="rounded-3xl bg-gradient-to-br from-amber-50/70 via-rose-50/40 to-violet-50/50 p-5 ring-1 ring-amber-200/60 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-600 to-rose-600 px-3 py-0.5 text-xs font-semibold text-white shadow-sm">
-                    <Sparkles className="h-3 w-3" />
-                    Bộ sưu tập Mẫu Slide Tuyển chọn (8 Bộ 16:9 Sẵn Dùng)
-                  </div>
-                  <h2 className="mt-2 text-lg font-bold text-slate-900">Chọn một khởi đầu cho ý tưởng của bạn</h2>
-                  <p className="mt-0.5 text-sm text-slate-600 max-w-2xl">
-                    Các bộ slide đầy đủ trang từ tệp gốc (gồm 4 mẫu xuất từ Canva và 4 mẫu kinh điển từ SlidesCarnival). Mở một bộ mẫu để chỉnh nội dung, sắp xếp hình ảnh và sáng tạo theo cách của bạn.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                {CANVA_DECKS.map((deck) => (
-                  <div
-                    key={deck.id}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg"
-                  >
-                    <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-                      <TemplateCover deck={deck} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                      <div className="absolute top-2.5 left-2.5">
-                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
-                          {deck.category}
-                        </span>
-                      </div>
-                      <div className="absolute top-2.5 right-2.5">
-                        <span className="rounded-md bg-amber-500/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-sm">
-                          {deck.slidesCount} SLIDES
-                        </span>
-                      </div>
-                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
-                        <h3 className="text-base font-bold drop-shadow-sm">{deck.name}</h3>
-                        <p className="text-xs text-slate-200 drop-shadow-sm">{deck.subtitle}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-1 flex-col justify-between p-4">
-                      <div>
-                        <p className="text-xs leading-relaxed text-slate-600">
-                          {deck.description}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {deck.tags.map((t) => (
-                            <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-500 font-medium">Tỉ lệ 16:9 · Sửa tự do</span>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          className="gap-1.5 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white shadow-sm"
-                          onClick={() => openCanvaPresetDeck(deck)}
-                        >
-                          <Presentation className="h-3.5 w-3.5" />
-                          Mở trọn bộ {deck.slidesCount} slide
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Generator Slide Sets */}
-            <div>
-              <h2 className="font-semibold text-slate-800">Bộ slide sinh nhanh theo phong cách</h2>
-              <p className="mt-1 text-sm text-slate-600">Chọn cấu trúc dàn bài và phối màu sẵn để sinh trọn bộ các trang thuyết trình 16:9.</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {SLIDE_SETS.map((set) => (
-                  <button key={set.name} type="button" onClick={() => openDeck(createSlideSet(set))} className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-violet-400 hover:shadow-md">
-                    <div aria-hidden="true" className="grid h-44 place-items-center overflow-hidden p-2" style={{ background: set.paper }}>
-                      <Mini d={slideSetPage(set, 0)} maxW={260} maxH={146} />
-                    </div>
-                    <div className="border-t border-slate-100 px-4 py-3">
-                      <span className="block font-semibold text-slate-800">{set.name}</span>
-                      <span className="mt-1 block text-xs text-slate-600">{set.style} · {set.pages.length} trang · 16:9</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <details className="mt-3 text-sm text-slate-600">
-              <summary className="cursor-pointer font-medium">Tìm thêm mẫu miễn phí</summary>
-              <p className="mt-2">Mở thư viện bên ngoài, chọn mẫu và tải PowerPoint nếu mẫu hỗ trợ. Sau đó dùng nút nhập bên dưới. Giữ phần ghi công theo điều khoản của mẫu.</p>
-              <ul className="mt-2 flex flex-wrap gap-4 text-violet-700 underline">
-                <li><a href="https://www.slidescarnival.com/category/education/free-templates" target="_blank" rel="noopener noreferrer">SlidesCarnival</a></li>
-                <li><a href="https://www.canva.com/presentations/templates/education/" target="_blank" rel="noopener noreferrer">Canva Education</a></li>
-                <li><a href="https://slidesgo.com/for-education" target="_blank" rel="noopener noreferrer">Slidesgo Education</a></li>
-              </ul>
-            </details>
-          </section>
-          )}
+          {libraryTab === "slides" && <TemplateHub onDesign={addDesign} onDeck={openDeck} />}
           {libraryTab === "ai" && (
           <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-pink-50 p-4 ring-1 ring-violet-100">
             <h3 className="flex items-center gap-2 font-medium text-slate-800">
@@ -1181,7 +1062,7 @@ export default function CreativePage() {
               <input
                 ref={deckRef}
                 type="file"
-                accept=".pptx,.pdf"
+                accept=".pptx,.pdf,.json"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0]
@@ -1431,7 +1312,7 @@ export default function CreativePage() {
       {cur && !showNew && (
         <>
           {presenting && <EnhancedSlideShow pages={deck ? pages : [cur]} start={pageIndex} onClose={() => setPresenting(false)} />}
-          <LiveEmbedModal isOpen={showLiveEmbed} onClose={() => setShowLiveEmbed(false)} />
+          {showLiveEmbed && <LiveEmbedModal isOpen onClose={() => setShowLiveEmbed(false)} />}
           <div className="creative-actions">
             <Button size="icon" variant="ghost" icon={Undo2} aria-label="Hoàn tác" title="Hoàn tác (Ctrl+Z)" onClick={undo} disabled={!histPast} />
             <Button size="icon" variant="ghost" icon={Redo2} aria-label="Làm lại" title="Làm lại (Ctrl+Shift+Z)" onClick={redo} disabled={!histFuture} />
@@ -1439,7 +1320,7 @@ export default function CreativePage() {
             {deck && <details className="relative"><summary className="cursor-pointer rounded-lg px-2 py-2 text-xs text-slate-600">Trang</summary><div className="absolute top-10 left-0 z-30 grid w-44 gap-1 rounded-xl border bg-white p-2 shadow-xl"><Button size="sm" variant="ghost" disabled={pageIndex <= 0} onClick={() => movePage(-1)}>Đưa lên trước</Button><Button size="sm" variant="ghost" disabled={pageIndex >= pages.length - 1} onClick={() => movePage(1)}>Đưa ra sau</Button></div></details>}
             <Button size="sm" variant={editOpen ? "soft" : "ghost"} icon={Sparkles} onClick={() => setEditOpen((v) => !v)}>Trợ lý thiết kế</Button>
             <Button size="sm" variant="ghost" icon={ImagePlus} onClick={() => fileRef.current?.click()}>Tải ảnh lên</Button>
-            {legacyTemplate && <Button size="sm" variant="soft" onClick={() => openCanvaPresetDeck(legacyTemplate)}>Mở bản mẫu đã sửa</Button>}
+            {legacyAssets && <span className="text-xs text-amber-700">Bản cũ có tài nguyên nguồn ngoài. Dùng mẫu Bloom hoặc nhập tài nguyên bạn có quyền sử dụng.</span>}
             <span className="ml-auto hidden sm:block text-xs text-slate-400">{cur.w} × {cur.h} px</span>
             <details className="relative">
               <summary className="cursor-pointer rounded-lg px-3 py-2 text-xs text-slate-600">Thiết kế của tôi ({designs.length})</summary>
@@ -1451,7 +1332,7 @@ export default function CreativePage() {
 
           {editOpen && (
             <Card className="creative-ai-panel mb-4 p-3">
-              <AiNotice />
+              <div className="mb-3 flex items-center justify-between gap-3"><strong className="text-sm">Trợ lý thiết kế</strong><Select aria-label="Phạm vi AI" className="h-8 w-44" value={aiScope} onChange={(e) => { setAiScope(e.target.value as "page" | "selection"); setAiProposal(null) }}><option value="page">Trang hiện tại</option><option value="selection">Thành phần đang chọn</option></Select><Button size="icon" variant="ghost" icon={X} aria-label="Đóng trợ lý" onClick={() => { aiAbort.current?.abort(); setEditOpen(false) }} /></div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Textarea
                   rows={2}
@@ -1462,7 +1343,7 @@ export default function CreativePage() {
                   placeholder="Nói AI cần đổi gì: đổi sang tông hồng pastel, tiêu đề to hơn, thêm họa tiết, viết lại chữ bằng tiếng Hàn..."
                 />
                 <Button icon={WandSparkles} loading={aiBusy === "edit"} onClick={aiEdit} className="sm:h-auto">
-                  {aiBusy === "edit" ? "Đang chỉnh..." : "Chỉnh"}
+                  {aiBusy === "edit" ? "Đang đề xuất..." : "Xem đề xuất"}
                 </Button>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1472,7 +1353,12 @@ export default function CreativePage() {
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-slate-500">Ảnh của bạn được giữ nguyên, AI chỉ sắp xếp lại. Mỗi lần chỉnh đều hoàn tác được.</p>
+              <p className="mt-2 text-xs text-slate-500">AI nhận chữ và thông số bố cục, không nhận tệp ảnh. Lớp khóa được bảo vệ. Chỉ áp dụng khi bạn chọn.</p>
+              {aiBusy === "edit" && <Button size="sm" variant="ghost" onClick={() => aiAbort.current?.abort()}>Dừng tạo đề xuất</Button>}
+              {aiProposal && <div className="mt-4 border-t pt-3"><p className="text-sm font-medium">{aiProposal.summary}</p><p className="text-xs text-slate-500 mt-1">{aiProposal.operations} thao tác · Bản gốc bên trái, đề xuất bên phải</p><div className="my-3 grid grid-cols-2 gap-3"><Mini d={aiProposal.before} maxW={250} maxH={180}/><Mini d={aiProposal.after} maxW={250} maxH={180}/></div><div className="flex gap-2"><Button onClick={() => {
+                if (curRef.current !== aiProposal.before) { toast.info("Trang đã thay đổi. Hãy tạo đề xuất mới để giữ các sửa đổi vừa làm."); return }
+                update((d) => ({ ...d, bg: aiProposal.after.bg, els: aiProposal.after.els }), "push"); setAiProposal(null); setEditOpen(false); toast.success("Đã áp dụng. Ctrl+Z để hoàn tác.")
+              }}>Áp dụng</Button><Button variant="outline" onClick={() => setAiProposal(null)}>Bỏ qua</Button></div></div>}
             </Card>
           )}
 
@@ -1516,7 +1402,13 @@ export default function CreativePage() {
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0]
-                  if (f) addImage(f)
+                  if (f && replaceImage.current) {
+                    const target = replaceImage.current; replaceImage.current = null
+                    fileToDataUrl(f, 2000, .9, true).then((im) => {
+                      const frame = curRef.current?.els.find((el) => el.id === target)
+                      if (frame) updateEl(target, { src: im.src, nw: im.w, nh: im.h, crop: coverCrop(im.w, im.h, frame.w, frame.h), cutout: im.alpha || undefined }, "push")
+                    }).catch(() => toast.error("Không đọc được ảnh."))
+                  } else if (f) addImage(f)
                   e.target.value = ""
                 }}
               />
@@ -1651,9 +1543,10 @@ export default function CreativePage() {
                     ))}
                   </>
                 )}
-                {selected?.type === "image" && <Button size="sm" variant="outline" icon={CropIcon} onClick={() => setCropping(selected)}>Cắt ảnh</Button>}
+                {selected?.type === "image" && <><Button size="sm" variant="outline" disabled={selected.locked} icon={CropIcon} onClick={() => setCropping(selected)}>Cắt ảnh</Button><Button size="sm" variant="ghost" disabled={selected.locked} icon={ImagePlus} onClick={() => { replaceImage.current = selected.id; fileRef.current?.click() }}>Thay ảnh</Button></>}
                 {selected && (
                   <>
+                    <Button size="icon" variant={selected.locked ? "soft" : "ghost"} icon={selected.locked ? LockKeyhole : UnlockKeyhole} aria-label={selected.locked ? "Mở khóa thành phần" : "Khóa thành phần"} onClick={() => updateEl(selected.id, { locked: !selected.locked }, "push")} />
                     <Button size="icon" variant={inspectorOpen ? "soft" : "ghost"} icon={SlidersHorizontal} aria-label="Chi tiết thành phần" title="Chi tiết thành phần" onClick={() => setInspectorOpen((v) => !v)} />
                     <details key={selected.id} className="relative">
                       <summary className="cursor-pointer rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">Lớp</summary>
@@ -1711,6 +1604,7 @@ export default function CreativePage() {
                       }}
                     >
                       <span
+                        hidden={selected.locked}
                         onPointerDown={(e) => startDrag(e, selected, "rotate")}
                         title="Kéo để xoay (giữ Shift: mỗi 15°)"
                         className="pointer-events-auto absolute -top-7 left-1/2 grid h-5 w-5 -translate-x-1/2 cursor-grab place-items-center rounded-full border-2 border-white bg-white text-violet-600 shadow ring-1 ring-violet-300"
@@ -1718,6 +1612,7 @@ export default function CreativePage() {
                         <RotateCw className="h-3 w-3" />
                       </span>
                       <span
+                        hidden={selected.locked}
                         onPointerDown={(e) => startDrag(e, selected, "resize")}
                         title="Kéo để đổi kích thước"
                         className="pointer-events-auto absolute -right-2 -bottom-2 h-4 w-4 cursor-nwse-resize rounded-full border-2 border-white bg-violet-600 shadow"
@@ -1738,7 +1633,7 @@ export default function CreativePage() {
             </div>
 
             {/* Properties */}
-            <Card className="creative-properties h-fit p-4">
+            <Card className="creative-properties h-fit p-4"><fieldset disabled={selected?.locked}>
               <h2 className="mb-3 text-sm font-semibold text-slate-800">{selected?.type === "text" ? "Sửa văn bản" : selected?.type === "image" ? "Chỉnh ảnh" : selected ? "Chỉnh hình khối" : "Thuộc tính"}</h2>
               {!selected ? (
                 <p className="text-sm text-slate-500">Chọn một thành phần trên thiết kế để chỉnh sửa.</p>
@@ -1874,6 +1769,7 @@ export default function CreativePage() {
 
                 </div>
               )}
+              </fieldset>
             </Card>
           </div>
           <footer className="creative-footer">
@@ -2101,22 +1997,6 @@ const Mini = memo(function Mini({ d, maxW, maxH }: { d: Omit<Design, "id" | "upd
       ))}
     </div>
   )
-})
-
-const TemplateCover = memo(function TemplateCover({ deck }: { deck: CanvaDeckInfo }) {
-  const [slide, setSlide] = useState<Design | null>(null)
-  const [width, setWidth] = useState(320)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch(`${deck.jsonPath}?v=2`, { signal: controller.signal }).then((r) => r.ok ? r.json() : []).then((slides: Design[]) => setSlide(slides[0] ?? null)).catch(() => {})
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
-    if (ref.current) observer.observe(ref.current)
-    return () => { controller.abort(); observer.disconnect() }
-  }, [deck.jsonPath])
-  return <div ref={ref} className="absolute inset-0 grid place-items-center overflow-hidden" style={{ background: deck.paper }}>
-    {slide ? <Mini d={slide} maxW={width} maxH={width * 9 / 16} /> : <span className="text-sm" style={{ color: deck.accent }}>{deck.name}</span>}
-  </div>
 })
 
 /* ---------- Colour adjustments ---------- */

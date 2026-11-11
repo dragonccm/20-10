@@ -6,8 +6,7 @@ import { idbGet, idbSet } from "./idb"
 import { readLS, uid, writeLS } from "./storage"
 import { textToHtml } from "./text"
 import { readPptxSlides, renderPdfPages, type FileKind } from "./docparse"
-import { loadBundledPresentation } from "./canva-templates"
-import { EMPTY_CV, type CV } from "@/components/studio/cv-preview"
+import { EMPTY_CV, type CV } from "./cv-data"
 
 /* ---------- Creative designs live in IndexedDB (they hold images); old data migrates from localStorage. ---------- */
 
@@ -125,8 +124,6 @@ export async function documentToDesigns(file: Blob, name: string, kind: FileKind
   const base = name.replace(/\.[^.]+$/, "")
   const now = Date.now()
   if (kind === "pptx") {
-    const bundled = await loadBundledPresentation(file).catch(() => null)
-    if (bundled) return bundled
     const { ratio, slides } = await readPptxSlides(file, (i, n) => onProgress?.(`Đang dựng slide ${i}/${n}...`))
     const W = 1920
     const H = Math.round(W / ratio)

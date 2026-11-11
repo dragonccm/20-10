@@ -6,6 +6,16 @@ export type Crop = { x: number; y: number; w: number; h: number } // fractions o
 export const NO_FILTER: Filters = { brightness: 100, contrast: 100, saturate: 100, grayscale: 0, sepia: 0, hue: 0, blur: 0 }
 export const FULL_CROP: Crop = { x: 0, y: 0, w: 1, h: 1 }
 
+/** Center crop that fills a frame without distorting the source image. */
+export function coverCrop(nw: number, nh: number, w: number, h: number): Crop {
+  if (![nw, nh, w, h].every((n) => Number.isFinite(n) && n > 0)) return { ...FULL_CROP }
+  const frameRatio = w / h
+  const imageRatio = nw / nh
+  return imageRatio > frameRatio
+    ? { x: (1 - frameRatio / imageRatio) / 2, y: 0, w: frameRatio / imageRatio, h: 1 }
+    : { x: 0, y: (1 - imageRatio / frameRatio) / 2, w: 1, h: imageRatio / frameRatio }
+}
+
 export const PRESETS: { name: string; f: Partial<Filters> }[] = [
   { name: "Gốc", f: {} },
   { name: "Sáng", f: { brightness: 115, contrast: 105, saturate: 110 } },

@@ -81,9 +81,19 @@ function CvBuilder() {
     printHtml(`CV ${cv.name}`, previewRef.current.innerHTML, "@page{size:A4;margin:0}body{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}")
   }
 
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("theme")
+    if (value !== null) {
+      const theme = CV_THEMES[Number(value)]
+      if (theme) setCv((current) => ({ ...current, theme, accent: theme.accent }))
+    }
+  }, [])
+
   if (!loaded) return null
 
   const theme = themeOf(cv)
+
+
   const setAccent = (c: string) => setCv((x) => ({ ...x, accent: c, theme: { ...themeOf(x), accent: c } }))
   const pickPhoto = async (f: File) => {
     try {
