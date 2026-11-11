@@ -22,7 +22,7 @@ browser storage are not deleted, but drafts referencing the removed public
 third-party assets need original user-supplied media to render again.
 
 Native collection (20 each / 240 in total):
-- CV: 20 themes, 7 layout families; structured editing, PDF printing, JSON backup.
+- CV: 20 themes, 20 document compositions; structured editing, PDF printing, JSON backup.
 - Presentations: 20 original five-page decks; layers, PNG/JPG, editable PPTX.
 - Social: 20 original post/story/banner/thumbnail layouts; native canvas editing.
 - Photos: 20 original frame/collage layouts; replace frames with personal uploads,
@@ -73,3 +73,19 @@ Next advanced release candidates:
 Multi-select/groups, full board panning/connectors, branded styles, multi-page AI
 change plans, richer formula/XLSX support, uploaded video/audio timeline, and native
 site publishing after the hosting/ownership workflow has been specified.
+
+Composition update (2026-11-11):
+The previous collection reused five canvas layouts and one HTML shell. It is now
+replaced with twenty authored compositions per native category, contextual deck
+contents, twenty website structures, twenty email structures, twenty CV layouts,
+twenty document outlines, twenty motion compositions, and contextual sheet tables.
+Gallery thumbnails for HTML, documents, video and sheets now render actual template
+content instead of a repeated title card. HTML thumbnail scripts are disabled,
+and offscreen previews are mounted on demand. The same motion renderer is used
+for preview and video recording.
+Code, website, email and sheet drafts from the first version remain accessible
+through the "Mở bản nháp cũ" link, using their original browser storage keys. New
+templates use separate storage keys. Existing user-created canvas drafts are not
+rewritten when the collection changes.
+Regression checks compare native geometry without text/colors, validate template
+bounds, verify every CV retains personal data, and compare HTML structures.

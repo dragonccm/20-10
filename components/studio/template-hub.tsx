@@ -13,7 +13,7 @@ import { bgCss, fontFamily, type Design } from "@/lib/studio/design"
 import { downloadFile, readLS, writeLS } from "@/lib/studio/storage"
 import { htmlTemplate, sheetTemplate } from "@/lib/studio/workspace-templates"
 import { Input } from "./ui"
-import { cn } from "@/lib/utils"
+import { WorkspaceThumbnail } from "./workspace-thumbnail"
 const ICONS={presentations:Presentation,social:Heart,photos:Image,video:Video,print:Printer,docs:FileText,whiteboard:Network,sheets:Table2,code:Code,websites:Globe,email:Mail,cv:Briefcase}
 const normalized=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d")
 export function TemplateHub({onDesign,onDeck}:{onDesign:(design:Design)=>void;onDeck:(designs:Design[])=>void}) {
@@ -45,7 +45,7 @@ export function TemplateHub({onDesign,onDeck}:{onDesign:(design:Design)=>void;on
   else if(category==="cv")router.push(`/studio/career?theme=${item.index}`)
   else if(category==="docs"){const doc=documentTemplate(item.index);sendToWriting(doc.title,{html:doc.html,lang:"vi",kind:"report"});router.push("/studio/writing")}
   else router.push(`/studio/create/${category}?template=${item.index}`)
- }}><div className="hub-template-art" style={{background:meta?.paper??theme.paper}}>{meta?<NativeThumbnail meta={meta}/>:category === "cv" ? <CvThumbnail index={item.index}/> : <div className={cn("hub-type-preview",category==="email"&&"email-preview")} style={{color:theme.ink}}><small style={{color:theme.accent}}>BLOOM / {String(item.index+1).padStart(2,"0")}</small><strong style={{fontFamily:category==="code"?"monospace":"Georgia,serif"}}>{item.name}</strong>{category==="sheets"?<div className="preview-table">{Array.from({length:16},(_,i)=><span key={i} style={{background:i<4?theme.accent:"#ffffff"}} />)}</div>:<><span className="preview-rule" style={{background:theme.accent}}/><p>{format.description}</p>{category==="video"&&<span className="preview-play">▶</span>}{category==="code"&&<code>&lt;idea /&gt;</code>}</>}</div>}<span className="hub-card-badge">Bloom · Dùng tự do</span></div><div className="hub-card-caption"><div><strong>{item.name}</strong><span>{meta?.caption??format.output}{category==="presentations"?" · 5 trang":""}</span></div><ArrowUpRight size={17}/></div></button>
+ }}><div className="hub-template-art" style={{background:meta?.paper??theme.paper}}>{meta?<NativeThumbnail meta={meta}/>:category === "cv" ? <CvThumbnail index={item.index}/> : <WorkspaceThumbnail kind={category as "docs"|"sheets"|"video"|"code"|"websites"|"email"} index={item.index}/>}<span className="hub-card-badge">Bloom · Dùng tự do</span></div><div className="hub-card-caption"><div><strong>{item.name}</strong><span>{meta?.caption??format.output}{category==="presentations"?" · 5 trang":""}</span></div><ArrowUpRight size={17}/></div></button>
  })}</div>
  {!results.length&&<p className="p-8 text-center text-slate-500">Chưa có mẫu khớp từ khóa. Hãy thử từ khóa khác.</p>}
  <p className="hub-license">Các mẫu Bloom mới dùng hình học và nội dung nguyên bản, phát hành theo <a href="/templates/bloom/LICENSE.txt" target="_blank" rel="noopener noreferrer">CC0 1.0</a>. Liên kết Canva chỉ để tham khảo và chỉnh tại Canva; không phân phối lại mẫu của Canva.</p>

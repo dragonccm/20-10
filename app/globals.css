@@ -168,3 +168,10 @@ body:has(.creative-editor) .studio-navigation { display: none; }
 @media(max-width:760px) { .hub-hero { padding: 20px 10px; } .hub-template-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; } .hub-template-art { height: 155px; padding: 7px; } .native-template-preview { transform: scale(.6); } .hub-type-preview { height: 140px; padding: 12px; } .hub-type-preview strong { font-size: 17px; } .hub-type-preview p { font-size: 8px; } .hub-section-heading { align-items: start; } .hub-section-heading a { max-width: 90px; font-size: 10px; } .hub-card-caption { padding: 10px; } .hub-card-caption strong { font-size: 11px; } .html-editor-grid,.video-editor-grid { grid-template-columns: minmax(0,1fr); } .workspace-engine > header { gap: 12px; padding: 14px; } .sheet-formula span { display: none; } .workspace-engine > header select { max-width: 100%; } }
 .hub-preview-frame { width: 100%; height: 100%; min-width: 0; min-height: 0; display: grid; place-items: center; }
 @media(max-width:760px) { .hub-template-art .native-template-preview { transform: none; } .hub-section-heading { flex-wrap: wrap; gap: 12px; } }
+.workspace-thumbnail { width:100%;height:100%;position:relative;overflow:hidden;pointer-events:none; background:#fff; }
+.workspace-thumbnail iframe { border:0;position:absolute;left:0;top:0;transform-origin:top left;pointer-events:none; background:white; }
+.workspace-thumbnail canvas { width:100%;height:100%;object-fit:contain;background:#f5f3f7; }
+.sheet-thumbnail { padding:12px 8px;background:#fff;height:100%; }
+.sheet-thumbnail small { display:block;font-size:9px;font-weight:700;margin-bottom:10px; }
+.sheet-thumbnail table { border-collapse:collapse;width:100%;table-layout:fixed;font:7px/1.5 Arial; }
+.sheet-thumbnail td { border:1px solid #e5e7eb;padding:5px 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis; }

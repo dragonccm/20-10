@@ -78,3 +78,58 @@ test('all inline Tiny scripts parse and the flower frame remains a valid string'
  const flower=html.match(/const flowerDoc = ("(?:\\.|[^"\\])*");/)
  assert.ok(flower);assert.ok(JSON.parse(flower[1]).endsWith('</body></html>'))
 })
+test('native collections differ in composition even when text and colors are ignored', () => {
+ for(const category of ['presentations','social','photos','print','whiteboard']){
+  const scenes=BLOOM_TEMPLATES.filter(t=>t.category===category).map(t=>buildBloomDesign(t))
+  const geometry=d=>JSON.stringify(d.els.filter(e=>e.type!=='text').map(e=>[e.type,...[e.x/d.w,e.y/d.h,e.w/d.w,e.h/d.h,e.rot||0].map(v=>Math.round(v*1000))]))
+  assert.equal(new Set(scenes.map(geometry)).size,20,category+' repeats a visual composition')
+  for(const scene of scenes)for(const e of scene.els.filter(e=>e.type==='text')){
+   assert.ok(e.x>=0&&e.y>=0&&e.x+e.w<=scene.w+2,scene.name+': text outside horizontal bounds '+e.text)
+   assert.ok(e.y+e.h<=scene.h+2,scene.name+': text outside vertical bounds '+e.text)
+  }
+ }
+})
+test('all twenty CV arrangements preserve the user profile and experience', () => {
+ const {renderToStaticMarkup}=require('react-dom/server')
+ const {CvPreview,SAMPLE_CV}=require('../components/studio/cv-preview.tsx')
+ const React=require('react')
+ assert.equal(new Set(CV_THEMES.map(t=>t.layout)).size,20)
+ for(const theme of CV_THEMES){
+  const html=renderToStaticMarkup(React.createElement(CvPreview,{cv:SAMPLE_CV,theme}))
+  for(const content of [SAMPLE_CV.name,SAMPLE_CV.email,SAMPLE_CV.education[0].school,SAMPLE_CV.experience[0].org,SAMPLE_CV.projects[0].name])assert.ok(html.includes(content),theme.name+' loses '+content)
+ }
+})
+test('HTML and document collections contain distinct structures and contextual content', () => {
+ const skeleton=html=>Array.from(html.matchAll(/<([a-z][a-z0-9]*)\b/gi),m=>m[1]).join(',')
+ for(const kind of ['websites','email']){
+  const structures=Array.from({length:20},(_,i)=>skeleton(htmlTemplate(kind,i)))
+  assert.equal(new Set(structures).size,20,kind+' repeats page structure')
+ }
+ assert.ok(new Set(Array.from({length:20},(_,i)=>skeleton(documentTemplate(i).html))).size>=17)
+ assert.equal(new Set(Array.from({length:20},(_,i)=>sheetTemplate(i)[0].join('|'))).size,20)
+})
+test('twenty motion presets draw distinct compositions in both aspect ratios', () => {
+ const {paintVideo}=require('../lib/studio/video-scenes.ts')
+ for(const portrait of [false,true]){
+  const drawings=[]
+  for(let index=0;index<20;index++){
+   const commands=[]
+   const ctx={save(){},restore(){},scale(){},beginPath(){},fill(){},stroke(){},measureText:s=>({width:s.length*35}),fillRect:(...a)=>commands.push(['rect',...a]),arc:(...a)=>commands.push(['arc',...a]),fillText:(value,...a)=>commands.push(['text',...a])}
+   paintVideo({width:portrait?720:1280,height:portrait?1280:720,getContext:()=>ctx},{title:'Một tiêu đề để kiểm tra',subtitle:'Thông điệp của bạn',accent:'#5750b5',paper:'#f3f0ff',ink:'#25213e',duration:5,portrait},.4,index)
+   assert.ok(commands.length>3);for(const [, ...values] of commands)assert.ok(values.every(Number.isFinite))
+   drawings.push(JSON.stringify(commands))
+  }
+  assert.equal(new Set(drawings).size,20)
+ }
+})
+test('interior slide pages vary across decks and keep text inside the slide', () => {
+ const decks=BLOOM_TEMPLATES.filter(t=>t.category==='presentations')
+ for(let page=1;page<5;page++){
+  const structures=decks.map(meta=>{
+   const d=buildBloomDesign(meta,page)
+   for(const e of d.els.filter(e=>e.type==='text'))assert.ok(e.x>=0&&e.y>=0&&e.x+e.w<=d.w+2&&e.y+e.h<=d.h+2,meta.name+' page '+page+': '+e.text)
+   return JSON.stringify(d.els.filter(e=>e.type!=='text').map(e=>[e.type,e.x,e.y,e.w,e.h,e.rot||0]))
+  })
+  assert.equal(new Set(structures).size,20,'repeated layout on interior page '+page)
+ }
+})

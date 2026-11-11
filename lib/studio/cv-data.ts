@@ -4,7 +4,7 @@ export type Exp = { id: string; org: string; role: string; from: string; to: str
 export type Proj = { id: string; name: string; detail: string }
 export type Lng = { id: string; name: string; level: string }
 
-export type CvLayout = "classic" | "banner" | "sidebar" | "timeline" | "minimal" | "split" | "korean"
+export type CvLayout = "classic" | "banner" | "sidebar" | "executive" | "timeline" | "minimal" | "split" | "korean" | "cards" | "folio" | "compact" | "letterhead" | "academic" | "magazine" | "project" | "skills-first" | "dossier" | "dashboard" | "research" | "profile"
 export type CvTheme = {
   name: string
   layout: CvLayout
@@ -90,21 +90,21 @@ export const CV_THEMES: CvTheme[] = [
   { ...base, name: "Thanh lịch", layout: "classic", accent: "#7c3aed", panel: "#f5f3ff", panelInk: "#1e293b", font: "sans", heading: "underline" },
   { ...base, name: "Banner hồng", layout: "banner", accent: "#db2777", panel: "#db2777", panel2: "#9333ea", panelInk: "#ffffff", font: "sans", heading: "bar", skills: "tags" },
   { ...base, name: "Sidebar tím", layout: "sidebar", accent: "#6d28d9", panel: "#4c1d95", panel2: "#6d28d9", panelInk: "#f5f3ff", font: "sans", heading: "caps", skills: "tags" },
-  { ...base, name: "Xanh chuyên nghiệp", layout: "sidebar", side: "right", accent: "#0369a1", panel: "#e0f2fe", panelInk: "#0c4a6e", font: "sans", heading: "underline", photo: "rounded", skills: "list" },
+  { ...base, name: "Xanh chuyên nghiệp", layout: "executive", side: "right", accent: "#0369a1", panel: "#e0f2fe", panelInk: "#0c4a6e", font: "sans", heading: "underline", photo: "rounded", skills: "list" },
   { ...base, name: "Dòng thời gian", layout: "timeline", accent: "#059669", panel: "#ecfdf5", panelInk: "#064e3b", font: "sans", heading: "dot", skills: "tags" },
   { ...base, name: "Tối giản cổ điển", layout: "minimal", accent: "#334155", panel: "#f8fafc", panelInk: "#0f172a", font: "serif", heading: "caps", photo: "none", density: "airy" },
   { ...base, name: "Hiện đại hai cột", layout: "split", accent: "#0284c7", panel: "#f0f9ff", panelInk: "#0c4a6e", font: "sans", heading: "pill", skills: "tags" },
   { ...base, name: "이력서 Hàn Quốc", layout: "korean", accent: "#1e3a8a", panel: "#eff6ff", panelInk: "#1e3a8a", font: "sans", heading: "bar", photo: "square", density: "compact" },
-  { ...base, name: "Pastel Seoul", layout: "banner", accent: "#c026d3", panel: "#fce7f3", panel2: "#ede9fe", panelInk: "#701a75", font: "mix", heading: "pill", skills: "tags" },
-  { ...base, name: "Đêm xanh vàng kim", layout: "sidebar", accent: "#b45309", panel: "#0f172a", panel2: "#1e293b", panelInk: "#fde68a", font: "mix", heading: "bar", skills: "list" },
-  { ...base, name: "Gọn một trang", layout: "classic", accent: "#e11d48", panel: "#fff1f2", panelInk: "#1e293b", font: "sans", heading: "bar", density: "compact", photo: "none", skills: "tags" },
-  { ...base, name: "Sang trọng serif", layout: "split", accent: "#9f1239", panel: "#fff7ed", panelInk: "#431407", font: "serif", heading: "underline", photo: "circle", density: "airy" },
-  { ...base, name: "Học thuật Oxford", layout: "classic", accent: "#173c58", panel: "#eef3f6", panelInk: "#173c58", font: "serif", heading: "underline", photo: "none", density: "airy" },
-  { ...base, name: "Creative terracotta", layout: "banner", accent: "#a84b31", panel: "#f6e9de", panelInk: "#522a22", font: "mix", heading: "caps", photo: "rounded", skills: "list" },
-  { ...base, name: "Product designer", layout: "split", accent: "#156d67", panel: "#edf6f2", panelInk: "#164a45", font: "sans", heading: "bar", photo: "rounded", skills: "tags" },
-  { ...base, name: "Kỹ thuật ATS", layout: "minimal", accent: "#242d38", panel: "#f3f5f7", panelInk: "#242d38", font: "sans", heading: "underline", photo: "none", density: "compact", skills: "text" },
-  { ...base, name: "Luật & tư vấn", layout: "classic", accent: "#654c3e", panel: "#f8f4ed", panelInk: "#443025", font: "serif", heading: "caps", photo: "none", skills: "list" },
-  { ...base, name: "Chuyên gia dữ liệu", layout: "sidebar", side: "right", accent: "#3655a4", panel: "#1e2c50", panelInk: "#ffffff", font: "sans", heading: "dot", photo: "none", density: "compact", skills: "tags" },
-  { ...base, name: "Giảng viên & nghiên cứu", layout: "timeline", accent: "#527049", panel: "#f0f5eb", panelInk: "#33472d", font: "mix", heading: "underline", photo: "circle", skills: "list" },
-  { ...base, name: "이력서 hiện đại", layout: "korean", accent: "#6a4a84", panel: "#f5f0f8", panelInk: "#4b325e", font: "sans", heading: "bar", photo: "square", skills: "text" },
+  { ...base, name: "Pastel Seoul", layout: "cards", accent: "#c026d3", panel: "#fce7f3", panel2: "#ede9fe", panelInk: "#701a75", font: "mix", heading: "pill", skills: "tags" },
+  { ...base, name: "Đêm xanh vàng kim", layout: "folio", accent: "#b45309", panel: "#0f172a", panel2: "#1e293b", panelInk: "#fde68a", font: "mix", heading: "bar", skills: "list" },
+  { ...base, name: "Gọn một trang", layout: "compact", accent: "#e11d48", panel: "#fff1f2", panelInk: "#1e293b", font: "sans", heading: "bar", density: "compact", photo: "none", skills: "tags" },
+  { ...base, name: "Sang trọng serif", layout: "letterhead", accent: "#9f1239", panel: "#fff7ed", panelInk: "#431407", font: "serif", heading: "underline", photo: "circle", density: "airy" },
+  { ...base, name: "Học thuật Oxford", layout: "academic", accent: "#173c58", panel: "#eef3f6", panelInk: "#173c58", font: "serif", heading: "underline", photo: "none", density: "airy" },
+  { ...base, name: "Creative terracotta", layout: "magazine", accent: "#a84b31", panel: "#f6e9de", panelInk: "#522a22", font: "mix", heading: "caps", photo: "rounded", skills: "list" },
+  { ...base, name: "Product designer", layout: "project", accent: "#156d67", panel: "#edf6f2", panelInk: "#164a45", font: "sans", heading: "bar", photo: "rounded", skills: "tags" },
+  { ...base, name: "Kỹ thuật ATS", layout: "skills-first", accent: "#242d38", panel: "#f3f5f7", panelInk: "#242d38", font: "sans", heading: "underline", photo: "none", density: "compact", skills: "text" },
+  { ...base, name: "Luật & tư vấn", layout: "dossier", accent: "#654c3e", panel: "#f8f4ed", panelInk: "#443025", font: "serif", heading: "caps", photo: "none", skills: "list" },
+  { ...base, name: "Chuyên gia dữ liệu", layout: "dashboard", side: "right", accent: "#3655a4", panel: "#1e2c50", panelInk: "#ffffff", font: "sans", heading: "dot", photo: "none", density: "compact", skills: "tags" },
+  { ...base, name: "Giảng viên & nghiên cứu", layout: "research", accent: "#527049", panel: "#f0f5eb", panelInk: "#33472d", font: "mix", heading: "underline", photo: "circle", skills: "list" },
+  { ...base, name: "이력서 hiện đại", layout: "profile", accent: "#6a4a84", panel: "#f5f0f8", panelInk: "#4b325e", font: "sans", heading: "bar", photo: "square", skills: "text" },
 ]

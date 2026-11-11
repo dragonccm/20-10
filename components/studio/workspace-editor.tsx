@@ -6,20 +6,24 @@ import { toast } from "sonner"
 import { Button, Input, Textarea, Select, Label, Card } from "./ui"
 import { WORKSPACE_NAMES, THEMES, htmlTemplate, sheetTemplate } from "@/lib/studio/workspace-templates"
 import { cellValue, columnName, sheetCsv } from "@/lib/studio/sheet-calc"
-import { downloadFile, safeFileName, useStored } from "@/lib/studio/storage"
+import { downloadFile, readLS, safeFileName, useStored } from "@/lib/studio/storage"
 import { callAi } from "@/lib/studio/ai"
+import { paintVideo, type VideoConfig } from "@/lib/studio/video-scenes"
 
 type Kind="video"|"sheets"|"code"|"websites"|"email"
-export function WorkspaceEditor({kind,initialIndex}:{kind:Kind;initialIndex:number}) {
+export function WorkspaceEditor({kind,initialIndex,legacy=false}:{kind:Kind;initialIndex:number;legacy?:boolean}) {
  const [index,setIndex]=useState(initialIndex)
+ const [hasLegacy,setHasLegacy]=useState(false)
+ useEffect(()=>{setHasLegacy(kind!=="video"&&readLS(`bloom.${kind}.${index}`,null)!==null)},[kind,index])
  const title={video:"Video chữ chuyển động",sheets:"Bảng tính",code:"Code Playground",websites:"Website HTML",email:"Email HTML"}[kind]
  return <div className="workspace-engine"><header><Link href={`/studio/creative?library=${kind}`}><ArrowLeft size={17}/> Kho mẫu</Link><strong>{title}</strong><Select aria-label="Chọn mẫu" value={index} onChange={e=>setIndex(Number(e.target.value))}>{WORKSPACE_NAMES[kind]!.map((n,i)=><option key={n} value={i}>{i+1}. {n}</option>)}</Select></header>
  <p className="engine-note">Mẫu Bloom nguyên bản · Tự lưu trên trình duyệt · Không có tài sản Canva</p>
- {kind==="sheets"?<SheetEditor key={kind+index} index={index}/>:kind==="video"?<VideoEditor key={kind+index} index={index}/>:<HtmlEditor key={kind+index} index={index} kind={kind}/>}
+ {hasLegacy&&<p className="engine-note">{legacy?"Bạn đang mở bản nháp phiên bản trước.":"Bản nháp phiên bản trước của bạn được lưu riêng."} <Link className="text-violet-700 underline" href={`/studio/create/${kind}?template=${index}${legacy?"":"&legacy=1"}`}>{legacy?"Mở mẫu mới":"Mở bản nháp cũ"}</Link></p>}
+ {kind==="sheets"?<SheetEditor key={kind+index+legacy} index={index} legacy={legacy}/>:kind==="video"?<VideoEditor key={kind+index} index={index}/>:<HtmlEditor key={kind+index+legacy} index={index} kind={kind} legacy={legacy}/>}
  </div>
 }
-function SheetEditor({index}:{index:number}) {
- const [cells,setCells]=useStored<string[][]>(`bloom.sheets.${index}`,sheetTemplate(index));const [selected,setSelected]=useState<[number,number]>([1,1]);const [past,setPast]=useState<string[][]|null>(null)
+function SheetEditor({index,legacy}:{index:number;legacy:boolean}) {
+ const [cells,setCells]=useStored<string[][]>(`bloom.sheets.${legacy?"":"v2."}${index}`,sheetTemplate(index));const [selected,setSelected]=useState<[number,number]>([1,1]);const [past,setPast]=useState<string[][]|null>(null)
  const [r,c]=selected;const change=(r:number,c:number,value:string)=>{setPast(cells);setCells(rows=>rows.map((row,ri)=>ri===r?row.map((old,ci)=>ci===c?value:old):row))}
  return <>
  <div className="engine-toolbar"><Button icon={Download} onClick={()=>downloadFile(`${safeFileName(WORKSPACE_NAMES.sheets![index])}.csv`,sheetCsv(cells),"text/csv;charset=utf-8")}>Tải CSV</Button><Button variant="outline" onClick={()=>downloadFile("bang-tinh.json",JSON.stringify(cells,null,2),"application/json")}>Sao lưu JSON</Button><Button icon={Plus} variant="outline" disabled={cells.length>=101} onClick={()=>setCells(v=>[...v,Array(v[0].length).fill("")])}>Thêm hàng</Button><Button icon={Undo2} variant="ghost" disabled={!past} onClick={()=>{if(past){setCells(past);setPast(null)}}}>Hoàn tác ô</Button></div>
@@ -28,8 +32,8 @@ function SheetEditor({index}:{index:number}) {
  <p className="engine-note">Công thức hỗ trợ + − × ÷, tham chiếu ô và SUM, AVERAGE, MIN, MAX, COUNT theo vùng. CSV chứa kết quả đã tính; JSON giữ công thức. Chưa hỗ trợ toàn bộ hàm Excel.</p>
  </>
 }
-function HtmlEditor({index,kind}:{index:number;kind:"code"|"websites"|"email"}) {
- const [html,setHtml]=useStored(`bloom.${kind}.${index}`,htmlTemplate(kind,index));const [preview,setPreview]=useState(html);const [prompt,setPrompt]=useState("");const [busy,setBusy]=useState(false);const [proposal,setProposal]=useState<{html:string;summary:string}|null>(null);const [before,setBefore]=useState("")
+function HtmlEditor({index,kind,legacy}:{index:number;kind:"code"|"websites"|"email";legacy:boolean}) {
+ const [html,setHtml]=useStored(`bloom.${kind}.${legacy?"":"v2."}${index}`,htmlTemplate(kind,index));const [preview,setPreview]=useState(html);const [prompt,setPrompt]=useState("");const [busy,setBusy]=useState(false);const [proposal,setProposal]=useState<{html:string;summary:string}|null>(null);const [before,setBefore]=useState("")
  useEffect(()=>{const t=setTimeout(()=>setPreview(html),350);return()=>clearTimeout(t)},[html])
  const protectedDoc=(source:string)=>{const policy=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; font-src data:; form-action 'none'; connect-src 'none'">`;return source.replace(/<head(?:\s[^>]*)?>/i,m=>m+policy).includes(policy)?source.replace(/<head(?:\s[^>]*)?>/i,m=>m+policy):policy+source}
  const ask=async()=>{if(!prompt.trim())return;setBusy(true);try{if(html.length>18000)throw Error("Mã quá dài cho một lần chỉnh AI. Hãy rút gọn dưới 18.000 ký tự.");const value=await callAi<{html:string;summary:string}>("html-edit",{text:JSON.stringify({request:prompt,html,kind})});if(typeof value.html!=="string"||value.html.length>60000||!value.html.includes("<"))throw Error("AI chưa trả mã hợp lệ.");setBefore(html);setProposal(value)}catch(e){toast.error((e as Error).message)}finally{setBusy(false)}}
@@ -42,16 +46,6 @@ function HtmlEditor({index,kind}:{index:number;kind:"code"|"websites"|"email"}) 
  </>
 }
 
-type VideoConfig={title:string;subtitle:string;accent:string;paper:string;ink:string;duration:number;portrait:boolean}
-function paintVideo(canvas:HTMLCanvasElement,cfg:VideoConfig,progress:number,variant:number) {
- const style=variant%5;const ctx=canvas.getContext("2d")!;const {width:w,height:h}=canvas;ctx.clearRect(0,0,w,h);ctx.fillStyle=style===2?cfg.ink:cfg.paper;ctx.fillRect(0,0,w,h)
- const t=Math.max(0,Math.min(1,progress)),enter=Math.min(1,t*6),alpha=Math.min(1,t*8,(1-t)*12)
- ctx.fillStyle=cfg.accent;ctx.globalAlpha=.13;ctx.beginPath();ctx.arc(w*(.78+.07*Math.sin(t*Math.PI*2)),h*.28,w*.28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.25;ctx.fillRect(w*.07,h*.82,w*.86*enter,4);ctx.globalAlpha=1
- const ink=style===2?cfg.paper:cfg.ink;ctx.fillStyle=ink;ctx.textAlign="left";ctx.textBaseline="top";ctx.font=`600 ${w*.018}px Arial`;ctx.fillText("BLOOM / MOTION STUDIO",w*.08,h*.12)
- ctx.globalAlpha=Math.max(0,alpha);ctx.save();ctx.translate((1-enter)*30,0);ctx.font=`bold ${w*(cfg.portrait ? .075 : .064)}px Georgia`;const words=cfg.title.split(/\s+/);const lines:string[]=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(ctx.measureText(next).width>w*.82&&line){lines.push(line);line=word}else line=next}lines.push(line)
- const fs=w*(cfg.portrait ? .075 : .064);lines.slice(0,4).forEach((line,i)=>ctx.fillText(line,w*.08,h*.32+i*fs*1.15));ctx.font=`${w*.027}px Arial`;ctx.fillText(cfg.subtitle.slice(0,70),w*.08,h*.72,w*.82);ctx.restore();ctx.globalAlpha=1
- if(variant===2){ctx.fillStyle=ink;ctx.textAlign="right";ctx.font=`bold ${h*.15}px Arial`;ctx.fillText(String(Math.max(1,Math.ceil(cfg.duration*(1-t)))),w*.9,h*.5)}
-}
 function VideoEditor({index}:{index:number}) {
  const theme=THEMES[index%5];const initial:VideoConfig={title:WORKSPACE_NAMES.video![index],subtitle:"Ý tưởng của bạn bắt đầu từ đây.",...theme,duration:5,portrait:index%3===1}
  const [cfg,setCfg]=useStored<VideoConfig>(`bloom.video.${index}`,initial);const [playing,setPlaying]=useState(false);const [position,setPosition]=useState(.4);const [exporting,setExporting]=useState(false);const canvas=useRef<HTMLCanvasElement>(null);const playbackPosition=useRef(.4);const cancelExport=useRef(false)
