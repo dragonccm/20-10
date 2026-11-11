@@ -23,6 +23,9 @@ export type El = {
   lineHeight?: number
   align?: "left" | "center" | "right"
   font?: "sans" | "serif"
+  fontFamily?: string
+  letterSpacing?: number
+  verticalAlign?: "top" | "middle" | "bottom"
   // shapes
   fill?: string
   radius?: number
@@ -38,7 +41,7 @@ export type El = {
   cutout?: boolean
   origSrc?: string
 }
-export type Design = { id: string; name: string; w: number; h: number; bg: Bg; els: El[]; updatedAt: number; deck?: { id: string; name: string } }
+export type Design = { id: string; name: string; w: number; h: number; bg: Bg; els: El[]; updatedAt: number; deck?: { id: string; name: string; revision?: number } }
 export type DesignDraft = Omit<Design, "id" | "updatedAt">
 
 export const FONTS = {
@@ -409,79 +412,6 @@ export const TEMPLATES: { name: string; cat: TemplateCat; make: () => DesignDraf
     }),
   },
   {
-    name: "Cẩm nang Kraft Đỏ (Canva Style)",
-    cat: "Thuyết trình",
-    make: () => ({
-      name: "Cẩm nang du lịch Kraft Đỏ",
-      w: 1920,
-      h: 1080,
-      bg: { from: "#f2f1eb", to: "#f2f1eb", angle: 135 },
-      els: [
-        { id: uid(), type: "image", x: 0, y: 0, w: 1920, h: 1080, opacity: 1, src: "/templates/canva/images/kraft_1.webp" },
-        R({ x: 940, y: 280, w: 560, h: 700, fill: "#84051b", radius: 0 }),
-        { id: uid(), type: "image", x: 980, y: 318, w: 480, h: 624, opacity: 1, src: "/templates/canva/images/kraft_2.webp" },
-        { id: uid(), type: "image", x: 1357, y: 41, w: 360, h: 357, opacity: 1, src: "/templates/canva/images/kraft_4.webp", cutout: true },
-        T({ x: 135, y: 84, w: 300, h: 50, text: "@REALLYGREATSITE", fontSize: 32, color: "#84051b", weight: 600 }),
-        T({ x: 135, y: 278, w: 500, h: 90, text: "KHÁM PHÁ", fontSize: 80, color: "#1c1917", weight: 700, font: "serif" }),
-        T({ x: 108, y: 360, w: 800, h: 260, text: "Việt Nam", fontSize: 200, color: "#1c1917", weight: 800, font: "serif" }),
-        T({ x: 135, y: 640, w: 750, h: 100, text: "CẨM NANG DU LỊCH 2026", fontSize: 44, color: "#84051b", weight: 700 }),
-      ],
-    }),
-  },
-  {
-    name: "Bài giảng Doodle Xanh (Canva Style)",
-    cat: "Thuyết trình",
-    make: () => ({
-      name: "Bài giảng Doodle thân thiện",
-      w: 1920,
-      h: 1080,
-      bg: { from: "#f0f9ff", to: "#e0f2fe", angle: 135 },
-      els: [
-        R({ x: 120, y: 120, w: 1680, h: 840, fill: "#ffffff", radius: 40 }),
-        { id: uid(), type: "image", x: 1320, y: 200, w: 420, h: 420, opacity: 1, src: "/templates/canva/images/edu_1.webp" },
-        T({ x: 200, y: 240, w: 1050, h: 80, text: "YẾU TỐ XUYÊN SUỐT CÂU CHUYỆN", fontSize: 44, color: "#0284c7", weight: 700 }),
-        T({ x: 200, y: 340, w: 1050, h: 260, text: "Chủ đề hoặc\ný tưởng chủ đạo", fontSize: 110, color: "#0f172a", weight: 800, lineHeight: 1.1 }),
-        R({ x: 200, y: 640, w: 180, h: 10, fill: "#38bdf8", radius: 5 }),
-        T({ x: 200, y: 680, w: 1050, h: 100, text: "Kỹ năng phân tích tác phẩm & Đúc rút thông điệp tác giả", fontSize: 46, color: "#475569", weight: 500 }),
-      ],
-    }),
-  },
-  {
-    name: "Sổ tay Scrapbook Pastel (Canva Style)",
-    cat: "Thuyết trình",
-    make: () => ({
-      name: "Sổ lưu niệm Scrapbook Pastel",
-      w: 1920,
-      h: 1080,
-      bg: { from: "#fdf6ec", to: "#fefae0", angle: 135 },
-      els: [
-        { id: uid(), type: "image", x: 1200, y: 180, w: 580, h: 620, opacity: 1, src: "/templates/canva/images/scrap_1.webp" },
-        R({ x: 140, y: 200, w: 980, h: 660, fill: "#ffffff", radius: 32 }),
-        T({ x: 200, y: 260, w: 860, h: 70, text: "HIỆN THỰC HÓA TẤT CẢ VÌ TA CHỈ SỐNG MỘT LẦN", fontSize: 36, color: "#df961a", weight: 700 }),
-        T({ x: 200, y: 350, w: 860, h: 260, text: "Dự đoán về\ncuộc sống của tôi\ntrong 10 năm tới", fontSize: 90, color: "#1e293b", weight: 800, lineHeight: 1.15 }),
-        R({ x: 200, y: 640, w: 260, h: 60, fill: "#fed7aa", radius: 30 }),
-        T({ x: 220, y: 652, w: 220, h: 40, text: "BẢNG KỶ NIỆM", fontSize: 26, color: "#9a3412", weight: 700, align: "center" }),
-      ],
-    }),
-  },
-  {
-    name: "Tạp chí Roadtrip Écosse (Canva Style)",
-    cat: "Thuyết trình",
-    make: () => ({
-      name: "Tạp chí Roadtrip Écosse",
-      w: 1920,
-      h: 1080,
-      bg: { from: "#f5ebe0", to: "#ede0d4", angle: 135 },
-      els: [
-        { id: uid(), type: "image", x: 1000, y: 0, w: 920, h: 1080, opacity: 1, src: "/templates/canva/images/ecosse_1.webp" },
-        R({ x: 140, y: 120, w: 12, h: 840, fill: "#1f4213", radius: 6 }),
-        T({ x: 200, y: 280, w: 740, h: 70, text: "HÀNH TRÌNH CHÂU ÂU · 2026", fontSize: 38, color: "#1f4213", weight: 700 }),
-        T({ x: 200, y: 360, w: 740, h: 260, text: "Roadtrip\nen Écosse", fontSize: 130, color: "#283618", weight: 800, font: "serif", lineHeight: 1.05 }),
-        T({ x: 200, y: 640, w: 740, h: 120, text: "Khám phá Edinburgh, cao nguyên hoang sơ và đảo Skye huyền thoại", fontSize: 44, color: "#606c38", weight: 500, lineHeight: 1.4 }),
-      ],
-    }),
-  },
-  {
     name: "Slide tiêu đề",
     cat: "Thuyết trình",
     make: () => ({
@@ -730,7 +660,9 @@ export function wrap(ctx: CanvasRenderingContext2D, s: string, maxW: number) {
   return lines
 }
 
-export const fontCss = (e: El, size = e.fontSize ?? 48) => `${e.italic ? "italic " : ""}${e.weight ?? 400} ${size}px ${FONTS[e.font ?? "sans"]}`
+export const fontFamily = (e: El) => e.fontFamily ? `${JSON.stringify(e.fontFamily)}, ${FONTS[e.font ?? "sans"]}` : FONTS[e.font ?? "sans"]
+
+export const fontCss = (e: El, size = e.fontSize ?? 48) => `${e.italic ? "italic " : ""}${e.weight ?? 400} ${size}px ${fontFamily(e)}`
 
 /**
  * The model often under-estimates how many lines a heading takes. Shrink text that would

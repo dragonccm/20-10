@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { Button } from "@/components/studio/ui"
-import { bgCss, FONTS, type Design, type El } from "@/lib/studio/design"
+import { bgCss, FONTS, fontFamily, type Design, type El } from "@/lib/studio/design"
 import { FULL_CROP, cssFilter, withDefaults } from "@/lib/studio/imagefx"
 import { fireCanvasConfetti, playDrumroll, playCheer } from "@/lib/studio/presentation-effects"
 
@@ -512,9 +512,13 @@ function PresentationElView({ el, scale }: { el: El; scale: number }) {
         fontSize: (el.fontSize ?? 48) * scale,
         fontWeight: el.weight,
         fontStyle: el.italic ? "italic" : undefined,
-        fontFamily: FONTS[el.font ?? "sans"],
+        fontFamily: fontFamily(el),
+        letterSpacing: (el.letterSpacing ?? 0) * scale,
         textAlign: el.align,
         lineHeight: el.lineHeight ?? 1.25,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: el.verticalAlign === "middle" ? "center" : el.verticalAlign === "bottom" ? "flex-end" : "flex-start",
         whiteSpace: "pre-wrap",
         overflowWrap: "break-word",
         textShadow: el.shadow ? `0 ${3 * scale}px ${12 * scale}px rgba(0,0,0,0.35)` : undefined,

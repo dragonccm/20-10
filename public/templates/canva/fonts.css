@@ -1,0 +1,235 @@
+@font-face {
+  font-family: "Bloom Barlow Medium";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/templates/canva/fonts/91c841fdfa8e7b94.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow Medium";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/74103fd6d41bc32c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow Medium";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/templates/canva/fonts/ce8ce6aff15dd097.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow Medium";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/7f638c17dbf6a48c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Kavivanar";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/1091e95b6afe6ed8.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow SemiBold";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/templates/canva/fonts/c15439e7a03af571.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow SemiBold";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/74103fd6d41bc32c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow SemiBold";
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/templates/canva/fonts/5b69736c3439d49e.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow SemiBold";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/7f638c17dbf6a48c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/a35caa4687f434d6.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/74103fd6d41bc32c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/480167bc350a4185.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Barlow";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/7f638c17dbf6a48c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Arimo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/22261f10e78d5e16.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Arimo";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/cd9567cc96a37654.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Nanum Myeongjo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/d3109373f86b59a4.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Nanum Myeongjo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/c6c9d7ddba9d3398.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Glass Antiqua";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/40be16784b4d1fcc.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Open Sans Light";
+  font-style: normal;
+  font-weight: 300;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/templates/canva/fonts/afdae82811cf0462.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Open Sans Light";
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/templates/canva/fonts/75367e6da7d914ea.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Open Sans Light";
+  font-style: italic;
+  font-weight: 300;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/templates/canva/fonts/0f568402dec9731d.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Open Sans Light";
+  font-style: italic;
+  font-weight: 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/templates/canva/fonts/6d3884d0d57c1b67.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Cardo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/2b86847db9b2737b.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Cardo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/58ea42a4bd3edc12.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Cardo";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/148086e3b40c970e.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Assistant";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/templates/canva/fonts/7db29a71f35e1b3c.woff2) format('truetype');
+}
+
+@font-face {
+  font-family: "Bloom Assistant";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/templates/canva/fonts/93ecab56b243eea4.woff2) format('truetype');
+}
+
+@font-face{font-family:"Bloom Anton";src:url("/templates/canva/fonts/9c306606325bb339.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Finesse Flair";src:url("/templates/canva/fonts/3e43a26f64cdf91e.otf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Asap Condensed";src:url("/templates/canva/fonts/4938ad16e2048828.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Asap Condensed Bold";src:url("/templates/canva/fonts/5024ce481c7aa36c.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Asap";src:url("/templates/canva/fonts/cf9e79e6e5d1daa2.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Faustina Bold";src:url("/templates/canva/fonts/bcecab43f40bfa26.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Faustina";src:url("/templates/canva/fonts/d8e11e381c1f58fa.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Asap Bold";src:url("/templates/canva/fonts/e6a33cb7c1e16cf6.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Faustina Italics";src:url("/templates/canva/fonts/74a912f791717ac4.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Nunito";src:url("/templates/canva/fonts/0656abaffe93d45f.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Mali";src:url("/templates/canva/fonts/2dea14dfcb87d4b1.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Nunito Bold";src:url("/templates/canva/fonts/51721a1159e85717.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Dekko";src:url("/templates/canva/fonts/bdf32db17d556868.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Playwrite US Trad";src:url("/templates/canva/fonts/fc851f4bc6443dc3.ttf");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Bloom Open Sans";src:url("/templates/canva/fonts/0d656a46ed6cae24.ttf");font-weight:400;font-style:normal;font-display:swap;}

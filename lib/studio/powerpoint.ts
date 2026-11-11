@@ -41,8 +41,8 @@ export async function exportPowerPoint(title: string, pages: Design[], render: R
       if (el.type === "text") {
         const fontSize = (el.fontSize ?? 48) * scale * 72
         slide.addText(el.text ?? "", {
-          ...box, margin: 0, valign: "top", align: el.align ?? "left",
-          fontFace: el.font === "serif" ? "Georgia" : "Arial",
+          ...box, margin: 0, valign: el.verticalAlign === "middle" ? "mid" : el.verticalAlign === "bottom" ? "bottom" : "top", align: el.align ?? "left",
+          fontFace: el.fontFamily?.replace(/^Bloom /, "") ?? (el.font === "serif" ? "Georgia" : "Arial"),
           fontSize, lineSpacing: fontSize * (el.lineHeight ?? 1.25),
           bold: (el.weight ?? 400) >= 600, italic: el.italic,
           color: (el.color ?? "#000000").slice(1), transparency,

@@ -1,9 +1,16 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
+  Search,
+  ZoomIn,
   AlignCenter,
   AlignCenterHorizontal,
   AlignCenterVertical,
@@ -47,12 +54,12 @@ import {
 } from "lucide-react"
 import { AiNotice, Button, Card, Input, Label, PageHeader, Select, Textarea } from "@/components/studio/ui"
 import { TOOLS } from "@/lib/studio/tools"
-import { downloadFile, safeFileName, uid } from "@/lib/studio/storage"
+import { downloadFile, readLS, writeLS, safeFileName, uid } from "@/lib/studio/storage"
 import { documentToDesigns, loadDesigns, storeDesigns } from "@/lib/studio/handoff"
 import { fileKind } from "@/lib/studio/docparse"
 import { fileToDataUrl, loadImg } from "@/lib/studio/image"
 import { FULL_CROP, NO_FILTER, PRESETS, cssFilter, processImage, withDefaults, type Crop, type Filters } from "@/lib/studio/imagefx"
-import { BGS, FONTS, SIZES, TEMPLATES, TEMPLATE_CATS, bgCss, blank, designForAi, fitText, wrap, sanitizeDesign, shape, text, type Design, type DesignDraft, type El, type TemplateCat } from "@/lib/studio/design"
+import { BGS, FONTS, fontFamily, SIZES, TEMPLATES, TEMPLATE_CATS, bgCss, blank, designForAi, fitText, wrap, sanitizeDesign, shape, text, type Design, type DesignDraft, type El, type TemplateCat } from "@/lib/studio/design"
 import { callAi } from "@/lib/studio/ai"
 import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studio/bgremove"
 import { cn } from "@/lib/utils"
@@ -93,6 +100,8 @@ function rounded(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
 }
 
 async function renderDesign(d: Design, type: "image/png" | "image/jpeg", transparent = false) {
+  await document.fonts.ready
+  await Promise.all(d.els.filter((el) => el.type === "text").map((el) => document.fonts.load(`${el.fontSize ?? 48}px ${fontFamily(el)}`)))
   const c = document.createElement("canvas")
   c.width = d.w
   c.height = d.h
@@ -155,13 +164,16 @@ async function renderDesign(d: Design, type: "image/png" | "image/jpeg", transpa
       ctx.drawImage(processed, x, y, el.w, el.h)
     } else if (el.type === "text") {
       const fs = el.fontSize ?? 48
-      ctx.font = `${el.italic ? "italic " : ""}${el.weight ?? 400} ${fs}px ${FONTS[el.font ?? "sans"]}`
+      ctx.font = `${el.italic ? "italic " : ""}${el.weight ?? 400} ${fs}px ${fontFamily(el)}`
+      ctx.letterSpacing = `${el.letterSpacing ?? 0}px`
       ctx.fillStyle = el.color ?? "#000"
       ctx.textBaseline = "middle"
       ctx.textAlign = el.align ?? "left"
       const lh = fs * (el.lineHeight ?? 1.25)
       const tx = el.align === "center" ? 0 : el.align === "right" ? x + el.w : x
-      wrap(ctx, el.text ?? "", el.w).forEach((line, i) => ctx.fillText(line, tx, y + i * lh + lh / 2))
+      const lines = wrap(ctx, el.text ?? "", el.w)
+      const ty = y + (el.verticalAlign === "middle" ? (el.h - lines.length * lh) / 2 : el.verticalAlign === "bottom" ? el.h - lines.length * lh : 0)
+      lines.forEach((line, i) => ctx.fillText(line, tx, ty + i * lh + lh / 2))
     }
     ctx.restore()
   }
@@ -192,6 +204,10 @@ export default function CreativePage() {
   const [imageServerStatus, setImageServerStatus] = useState<ImageServerStatus | null>(null)
   const [imageServerChecking, setImageServerChecking] = useState(false)
   const [scale, setScale] = useState(0.4)
+  const [zoom, setZoom] = useState(1)
+  const [leftTab, setLeftTab] = useState("elements")
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [guides, setGuides] = useState<Guides>({ v: [], h: [] })
   const [cropping, setCropping] = useState<El | null>(null)
   const [panel, setPanel] = useState<"edit" | "adjust">("edit")
@@ -214,6 +230,7 @@ export default function CreativePage() {
   const [showLiveEmbed, setShowLiveEmbed] = useState(false)
   const [, setHistTick] = useState(0)
   const stageWrap = useRef<HTMLDivElement>(null)
+  const stageArea = useRef<HTMLDivElement>(null)
   const textEditor = useRef<HTMLLabelElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -226,11 +243,13 @@ export default function CreativePage() {
   useEffect(() => {
     loadDesigns().then((ds) => {
       setDesigns(ds)
-      setCurId(ds[0]?.id ?? null)
+      setCurId(ds.find((d) => d.id === readLS<string | null>("bloom.creative.active", null))?.id ?? ds[0]?.id ?? null)
       setShowNew(!ds.length)
       setLoaded(true)
     })
   }, [])
+
+  useEffect(() => { if (loaded && curId) writeLS("bloom.creative.active", curId) }, [loaded, curId])
 
   // Debounced persistence (designs may contain images, so they live in IndexedDB).
   useEffect(() => {
@@ -246,6 +265,7 @@ export default function CreativePage() {
 
   const cur = designs.find((d) => d.id === curId) ?? null
   const deck = cur?.deck
+  const legacyTemplate = deck && !deck.revision ? CANVA_DECKS.find((t) => t.name === deck.name) : undefined
   const pages = deck ? designs.filter((d) => d.deck?.id === deck.id) : []
   const pageIndex = pages.findIndex((d) => d.id === curId)
   const curRef = useRef(cur)
@@ -308,6 +328,7 @@ export default function CreativePage() {
     setCurId(pages[0].id)
     setSel(null)
     setShowNew(false)
+    setZoom(1)
   }
 
   const movePage = (step: number) => {
@@ -385,6 +406,7 @@ export default function CreativePage() {
   }
 
   const addEl = (el: El, center = true) => {
+    setToolsOpen(false)
     if (!cur) return
     update((d) => ({ ...d, els: [...d.els, center ? { ...el, x: Math.round(d.w / 2 - el.w / 2), y: Math.round(d.h / 2 - el.h / 2) } : el] }), "push")
     setSel(el.id)
@@ -445,14 +467,14 @@ export default function CreativePage() {
 
   // Fit stage to available space.
   useEffect(() => {
-    const el = stageWrap.current
+    const el = stageArea.current
     if (!el || !cur) return
-    const fit = () => setScale(Math.min(Math.max(1, el.clientWidth - 32) / cur.w, (window.innerHeight * 0.68) / cur.h, 1))
+    const fit = () => setScale(Math.min(Math.max(1, el.clientWidth - 32) / cur.w, Math.max(100, el.clientHeight - 40) / cur.h, 1) * zoom)
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [cur?.w, cur?.h, cur, showNew])
+  }, [cur?.w, cur?.h, showNew, zoom])
 
   useEffect(() => {
     if (showNew || presenting) return
@@ -493,21 +515,65 @@ export default function CreativePage() {
     return () => window.removeEventListener("keydown", onKey)
   }, [showNew, presenting, sel, selected, removeSel, duplicateSel, updateEl, undo, redo])
 
+  const hitMasks = useRef(new Map<string, Promise<HTMLCanvasElement | null>>())
+  const pickElement = async (event: React.PointerEvent) => {
+    event.stopPropagation()
+    event.preventDefault()
+    const bounds = stageRef.current?.getBoundingClientRect()
+    if (!cur || !bounds) return
+    let released = false
+    const release = () => { released = true }
+    window.addEventListener("pointerup", release, { once: true })
+    const px = (event.clientX - bounds.left) / scale
+    const py = (event.clientY - bounds.top) / scale
+    for (const el of [...cur.els].reverse()) {
+      const angle = -(el.rot ?? 0) * Math.PI / 180
+      const dx = px - el.x - el.w / 2, dy = py - el.y - el.h / 2
+      const x = dx * Math.cos(angle) - dy * Math.sin(angle) + el.w / 2
+      const y = dx * Math.sin(angle) + dy * Math.cos(angle) + el.h / 2
+      if (x < 0 || y < 0 || x > el.w || y > el.h || el.opacity <= 0) continue
+      if (el.type === "image" && el.cutout && el.src) {
+        if (!hitMasks.current.has(el.src)) hitMasks.current.set(el.src, loadImg(el.src).then((img) => {
+          const mask = document.createElement("canvas"); mask.width = 256; mask.height = Math.max(1, Math.round(256 * img.naturalHeight / img.naturalWidth))
+          mask.getContext("2d", { willReadFrequently: true })!.drawImage(img, 0, 0, mask.width, mask.height)
+          return mask
+        }).catch(() => null))
+        const mask = await hitMasks.current.get(el.src)
+        if (mask) {
+          const crop = el.crop ?? FULL_CROP
+          const mx = Math.min(mask.width - 1, Math.max(0, Math.floor((crop.x + (el.flipX ? 1 - x / el.w : x / el.w) * crop.w) * mask.width)))
+          const my = Math.min(mask.height - 1, Math.max(0, Math.floor((crop.y + (el.flipY ? 1 - y / el.h : y / el.h) * crop.h) * mask.height)))
+          if (mask.getContext("2d")!.getImageData(mx, my, 1, 1).data[3] < 20) continue
+        }
+      }
+      window.removeEventListener("pointerup", release)
+      if (released) setSel(el.id)
+      else startDrag(event, el, "move")
+      return
+    }
+    window.removeEventListener("pointerup", release)
+    setSel(null)
+  }
+
   const startDrag = (e: React.PointerEvent, el: El, mode: "move" | "resize" | "rotate") => {
     e.stopPropagation()
     e.preventDefault()
     setSel(el.id)
     if (!cur) return
-    pushHistory()
+    let didPush = false
     const sx = e.clientX
     const sy = e.clientY
     const start = { x: el.x, y: el.y, w: el.w, h: el.h }
     const W = cur.w
     const H = cur.h
     const rect = stageRef.current?.getBoundingClientRect()
-    const onMove = (ev: PointerEvent) => {
+    let frame = 0
+    let pending: PointerEvent | null = null
+    const applyMove = (ev: PointerEvent) => {
       const dx = (ev.clientX - sx) / scale
       const dy = (ev.clientY - sy) / scale
+      if (!didPush && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 2) return
+      if (!didPush) { pushHistory(); didPush = true }
       if (mode === "move") {
         let nx = start.x + dx
         let ny = start.y + dy
@@ -559,13 +625,21 @@ export default function CreativePage() {
         updateEl(el.id, { rot: Math.round(deg) % 360 }, "none")
       }
     }
+    const onMove = (ev: PointerEvent) => {
+      pending = ev
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (pending) applyMove(pending) })
+    }
     const onUp = () => {
+      cancelAnimationFrame(frame)
+      if (pending) applyMove(pending)
       setGuides({ v: [], h: [] })
       window.removeEventListener("pointermove", onMove)
       window.removeEventListener("pointerup", onUp)
+      window.removeEventListener("pointercancel", onUp)
     }
     window.addEventListener("pointermove", onMove)
     window.addEventListener("pointerup", onUp)
+    window.addEventListener("pointercancel", onUp)
   }
 
   const exportAs = async (type: "image/png" | "image/jpeg") => {
@@ -850,34 +924,23 @@ export default function CreativePage() {
   if (!loaded) return null
 
   return (
-    <div>
-      <PageHeader
-        icon={tool.icon}
-        tint={tool.tint}
-        title={tool.name} guide={tool.guide}
-        desc="Chỉnh ảnh, làm poster, slide, thẻ từ vựng. Kéo để di chuyển, kéo chấm tím để đổi cỡ, kéo chấm tròn phía trên để xoay."
-        actions={
-          <>
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) openPhoto(f)
-                e.target.value = ""
-              }}
-            />
-            <Button variant="outline" icon={SlidersHorizontal} onClick={() => photoRef.current?.click()}>
-              Chỉnh sửa ảnh
-            </Button>
-            <Button variant={showNew ? "soft" : "outline"} icon={Plus} onClick={() => setShowNew((v) => !v)} disabled={showNew && !cur}>
-              {showNew && cur ? "Quay lại chỉnh sửa" : "Kho mẫu & tạo mới"}
-            </Button>
-          </>
-        }
-      />
+    <div className={cn("creative-workspace", cur && !showNew ? "creative-editor" : "creative-library", selected && "has-selection", toolsOpen && "tools-open", inspectorOpen && "inspector-open")}>
+      <header className="creative-header">
+        <a href="/studio" className="creative-home" aria-label="Về Bloom Workspace"><ArrowLeft className="h-4 w-4" /><span>Bloom<span className="font-normal opacity-70"> Studio</span></span></a>
+        <span className="creative-header-divider" />
+        <Button variant="ghost" size="sm" onClick={() => setShowNew((v) => !v)}><LayoutTemplate className="h-4 w-4" />{showNew && cur ? "Về thiết kế" : "Kho mẫu"}</Button>
+        <div className="creative-document-title">{!showNew && cur ? <input aria-label="Tên thiết kế" value={cur.name} onChange={(e) => update((d) => ({ ...d, name: e.target.value }))} /> : "Một ý tưởng nhỏ. Muôn cách sáng tạo."}</div>
+        <span className="creative-save"><Check className="h-4 w-4" /><span>Lưu trên máy</span></span>
+        {!showNew && cur && <>
+          <Button size="sm" variant="ghost" icon={Presentation} onClick={() => setPresenting(true)}>Trình chiếu</Button>
+          <details className="creative-export"><summary><Download className="h-4 w-4" />Xuất thiết kế</summary><div>
+            <Button variant="ghost" onClick={() => exportAs("image/png")}>Ảnh PNG</Button>
+            <Button variant="ghost" onClick={() => exportAs("image/jpeg")}>Ảnh JPG</Button>
+            {deck && <Button variant="ghost" loading={exportingDeck} onClick={exportDeck}>PowerPoint (.pptx)</Button>}
+          </div></details>
+        </>}
+        <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) openPhoto(f); e.target.value = "" }} />
+      </header>
 
       {showNew && (
         <Card className="mb-5 p-4">
@@ -906,7 +969,7 @@ export default function CreativePage() {
                   <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                     Nhúng Trực Tiếp Google Slides & Canva
                     <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      100% Hiệu Ứng Gốc
+                      Trình chiếu từ nguồn
                     </span>
                   </h3>
                   <p className="text-xs text-slate-600">
@@ -931,9 +994,9 @@ export default function CreativePage() {
                     <Sparkles className="h-3 w-3" />
                     Bộ sưu tập Mẫu Slide Tuyển chọn (8 Bộ 16:9 Sẵn Dùng)
                   </div>
-                  <h2 className="mt-2 text-lg font-bold text-slate-900">Mẫu slide Canva & Thư viện Quốc tế nguyên bản</h2>
+                  <h2 className="mt-2 text-lg font-bold text-slate-900">Chọn một khởi đầu cho ý tưởng của bạn</h2>
                   <p className="mt-0.5 text-sm text-slate-600 max-w-2xl">
-                    Trọn bộ 10 slide hoàn chỉnh (gồm 4 mẫu xuất từ Canva và 4 mẫu kinh điển từ SlidesCarnival). Đầy đủ tranh ảnh, sticker, bảng biểu, mốc thời gian và typography chuẩn 16:9. Mở trực tiếp 1 click để sửa từng thành phần.
+                    Các bộ slide đầy đủ trang từ tệp gốc (gồm 4 mẫu xuất từ Canva và 4 mẫu kinh điển từ SlidesCarnival). Mở một bộ mẫu để chỉnh nội dung, sắp xếp hình ảnh và sáng tạo theo cách của bạn.
                   </p>
                 </div>
               </div>
@@ -945,21 +1008,7 @@ export default function CreativePage() {
                     className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg"
                   >
                     <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
-                      {deck.coverImage ? (
-                        <img
-                          src={deck.coverImage}
-                          alt={deck.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div
-                          className="grid h-full place-items-center"
-                          style={{ background: deck.paper }}
-                        >
-                          <span className="font-semibold" style={{ color: deck.accent }}>{deck.name}</span>
-                        </div>
-                      )}
+                      <TemplateCover deck={deck} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
                       <div className="absolute top-2.5 left-2.5">
                         <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
@@ -1381,68 +1430,27 @@ export default function CreativePage() {
 
       {cur && !showNew && (
         <>
-          {deck && (
-            <Card className="mb-3 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="mr-auto font-medium text-slate-800">{deck.name} · Trang {pageIndex + 1}/{pages.length}</h2>
-                <Button size="sm" variant="outline" icon={Presentation} onClick={() => setPresenting(true)}>Trình chiếu (Canva Mode)</Button>
-                <Button size="sm" variant="outline" icon={ExternalLink} onClick={() => setShowLiveEmbed(true)} title="Nhúng trực tiếp từ Google Slides hoặc Canva để giữ 100% hiệu ứng gốc">Nhúng GSlides / Canva</Button>
-                <Button size="sm" icon={Download} loading={exportingDeck} onClick={exportDeck}>Tải PowerPoint</Button>
-                <Button size="sm" variant="outline" disabled={pageIndex <= 0} onClick={() => movePage(-1)}>Đưa lên trước</Button>
-                <Button size="sm" variant="outline" disabled={pageIndex >= pages.length - 1} onClick={() => movePage(1)}>Đưa ra sau</Button>
-                <Button size="sm" variant="soft" icon={Plus} onClick={() => addDesign({ ...blank(cur.w, cur.h, "Trang mới"), deck })}>Thêm trang</Button>
-              </div>
-              <div className="mt-3 flex gap-2 overflow-x-auto">
-                {pages.map((page, index) => (
-                  <Button key={page.id} size="sm" variant={page.id === curId ? "soft" : "outline"} aria-current={page.id === curId ? "page" : undefined} onClick={() => { setCurId(page.id); setSel(null) }}>
-                    {index + 1}. {page.name}
-                  </Button>
-                ))}
-              </div>
-            </Card>
-          )}
-          {presenting && deck && <EnhancedSlideShow pages={pages} start={pageIndex} onClose={() => setPresenting(false)} />}
+          {presenting && <EnhancedSlideShow pages={deck ? pages : [cur]} start={pageIndex} onClose={() => setPresenting(false)} />}
           <LiveEmbedModal isOpen={showLiveEmbed} onClose={() => setShowLiveEmbed(false)} />
-          {/* Top toolbar */}
-          <Card className="mb-4 flex flex-wrap items-center gap-2 p-2">
-            <label className="flex min-w-0 items-center gap-2">
-              <span className="shrink-0 pl-2 text-xs font-medium text-slate-600">Tên thiết kế</span>
-              <Input value={cur.name} onChange={(e) => update((d) => ({ ...d, name: e.target.value }))} className="h-9 w-44 min-w-0" />
-            </label>
-            {designs.length > 1 && (
-              <details className="relative">
-                <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">Đổi thiết kế</summary>
-                <div className="absolute left-0 z-30 mt-1 max-h-64 w-56 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-                  {designs.map((d) => (
-                    <button key={d.id} type="button" aria-current={d.id === cur.id ? "true" : undefined} className={cn("block w-full truncate rounded-lg px-3 py-2 text-left text-sm", d.id === cur.id ? "bg-violet-50 font-medium text-violet-800" : "hover:bg-slate-50")} onClick={(e) => {
-                      e.currentTarget.closest("details")?.removeAttribute("open")
-                      setCurId(d.id)
-                      setSel(null)
-                    }}>
-                      {d.name || "Thiết kế chưa đặt tên"}
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
-            <span className="mx-1 hidden h-6 w-px bg-slate-200 sm:block" />
+          <div className="creative-actions">
             <Button size="icon" variant="ghost" icon={Undo2} aria-label="Hoàn tác" title="Hoàn tác (Ctrl+Z)" onClick={undo} disabled={!histPast} />
             <Button size="icon" variant="ghost" icon={Redo2} aria-label="Làm lại" title="Làm lại (Ctrl+Shift+Z)" onClick={redo} disabled={!histFuture} />
-            <Button size="sm" variant={editOpen ? "soft" : "outline"} icon={Sparkles} onClick={() => setEditOpen((v) => !v)}>
-              Chỉnh bằng AI
-            </Button>
-            <div className="ml-auto flex gap-2">
-              <Button size="sm" variant="outline" icon={Download} onClick={() => exportAs("image/jpeg")}>
-                Tải JPG
-              </Button>
-              <Button size="sm" icon={Download} onClick={() => exportAs("image/png")}>
-                Tải PNG
-              </Button>
-            </div>
-          </Card>
+            <span className="h-5 w-px bg-slate-200 mx-2" />
+            {deck && <details className="relative"><summary className="cursor-pointer rounded-lg px-2 py-2 text-xs text-slate-600">Trang</summary><div className="absolute top-10 left-0 z-30 grid w-44 gap-1 rounded-xl border bg-white p-2 shadow-xl"><Button size="sm" variant="ghost" disabled={pageIndex <= 0} onClick={() => movePage(-1)}>Đưa lên trước</Button><Button size="sm" variant="ghost" disabled={pageIndex >= pages.length - 1} onClick={() => movePage(1)}>Đưa ra sau</Button></div></details>}
+            <Button size="sm" variant={editOpen ? "soft" : "ghost"} icon={Sparkles} onClick={() => setEditOpen((v) => !v)}>Trợ lý thiết kế</Button>
+            <Button size="sm" variant="ghost" icon={ImagePlus} onClick={() => fileRef.current?.click()}>Tải ảnh lên</Button>
+            {legacyTemplate && <Button size="sm" variant="soft" onClick={() => openCanvaPresetDeck(legacyTemplate)}>Mở bản mẫu đã sửa</Button>}
+            <span className="ml-auto hidden sm:block text-xs text-slate-400">{cur.w} × {cur.h} px</span>
+            <details className="relative">
+              <summary className="cursor-pointer rounded-lg px-3 py-2 text-xs text-slate-600">Thiết kế của tôi ({designs.length})</summary>
+              <div className="absolute right-0 z-30 mt-1 max-h-64 w-64 overflow-y-auto rounded-xl border bg-white p-2 shadow-xl">
+                {designs.map((d) => <button key={d.id} className="block w-full truncate rounded-lg p-2 text-left text-sm hover:bg-violet-50" onClick={(e) => { setCurId(d.id); setSel(null); e.currentTarget.closest("details")?.removeAttribute("open") }}>{d.name}</button>)}
+              </div>
+            </details>
+          </div>
 
           {editOpen && (
-            <Card className="mb-4 p-3">
+            <Card className="creative-ai-panel mb-4 p-3">
               <AiNotice />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Textarea
@@ -1468,9 +1476,21 @@ export default function CreativePage() {
             </Card>
           )}
 
-          <div className="grid gap-4 lg:grid-cols-[185px_minmax(0,1fr)_245px] xl:grid-cols-[220px_minmax(0,1fr)_270px]">
+          <div className="creative-body">
+            <nav className="creative-rail" aria-label="Công cụ thiết kế">
+              {([
+                ["templates", LayoutTemplate, "Mẫu"], ["elements", Square, "Thành phần"], ["text", Type, "Văn bản"], ["uploads", ImagePlus, "Tải lên"], ["layers", Layers, "Lớp"], ["background", Palette, "Nền"],
+              ] as const).map(([id, Icon, label]) => <button key={id} aria-pressed={leftTab === id} onClick={() => {
+                setLeftTab(id)
+                setToolsOpen((open) => leftTab === id ? !open : true)
+                if (id === "templates") setShowNew(true)
+                if (id === "text") addEl(text({ w: Math.round(cur.w * 0.6), fontSize: Math.round(cur.w / 18) }))
+                if (id === "uploads") fileRef.current?.click()
+                if (id === "layers" || id === "background") document.querySelector<HTMLDetailsElement>(id === "layers" ? ".creative-tools details" : ".creative-tools details:last-child")?.setAttribute("open", "")
+              }}><Icon className="h-5 w-5" /><span>{label}</span></button>)}
+            </nav>
             {/* Left: add & background */}
-            <Card className="h-fit space-y-3 p-3">
+            <Card className="creative-tools h-fit space-y-3 p-3">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-600">Thêm vào trang</h2>
               <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-2">
                 <AddBtn icon={Type} label="Chữ" onClick={() => addEl(text({ w: Math.round(cur.w * 0.6), fontSize: Math.round(cur.w / 18) }))} />
@@ -1604,12 +1624,13 @@ export default function CreativePage() {
             </Card>
 
             {/* Stage */}
-            <div ref={stageWrap} className="min-w-0 rounded-2xl border border-slate-200 bg-slate-100">
-              <div className="flex min-h-14 flex-wrap items-center justify-center gap-1.5 rounded-t-2xl border-b border-slate-200 bg-white p-2">
+            <div ref={stageWrap} className="creative-stage-wrap min-w-0">
+              <div className="creative-context-toolbar flex min-h-12 flex-wrap items-center justify-center gap-1.5 bg-white p-2">
                 {!selected && <span className="text-xs text-slate-500">Chọn chữ, ảnh hoặc hình khối để chỉnh</span>}
                 {selected?.type === "text" && (
                   <>
-                    <Select aria-label="Kiểu chữ" value={selected.font ?? "sans"} onChange={(e) => updateEl(selected.id, { font: e.target.value as "sans" | "serif" }, "push")} className="h-8 w-32 pr-6">
+                    <Select aria-label="Kiểu chữ" value={selected.fontFamily ? "original" : selected.font ?? "sans"} onChange={(e) => updateEl(selected.id, { font: e.target.value as "sans" | "serif", fontFamily: undefined }, "push")} className="h-8 w-32 pr-6">
+                      {selected.fontFamily && <option value="original">{selected.fontFamily.replace("Bloom ", "")}</option>}
                       <option value="sans">Hiện đại</option>
                       <option value="serif">Cổ điển</option>
                     </Select>
@@ -1623,13 +1644,7 @@ export default function CreativePage() {
                         <ColorRow label="Chọn màu chữ" value={selected.color ?? "#000000"} onChange={(color) => updateEl(selected.id, { color }, "push")} />
                       </div>
                     </details>
-                    <Select aria-label="Độ đậm" value={selected.weight ?? 400} onChange={(e) => updateEl(selected.id, { weight: Number(e.target.value) }, "push")} className="h-8 w-28 pr-6">
-                      <option value={400}>Thường</option>
-                      <option value={500}>Vừa</option>
-                      <option value={600}>Đậm vừa</option>
-                      <option value={700}>Đậm</option>
-                      <option value={800}>Rất đậm</option>
-                    </Select>
+
                     <Button size="icon" variant={selected.italic ? "soft" : "ghost"} icon={Italic} aria-label="Chữ nghiêng" aria-pressed={!!selected.italic} onClick={() => updateEl(selected.id, { italic: !selected.italic }, "push")} />
                     {([["left", AlignLeft, "Căn trái"], ["center", AlignCenter, "Căn giữa"], ["right", AlignRight, "Căn phải"]] as const).map(([value, Icon, label]) => (
                       <Button key={value} size="icon" variant={(selected.align ?? "left") === value ? "soft" : "ghost"} icon={Icon} aria-label={label} title={label} onClick={() => updateEl(selected.id, { align: value }, "push")} />
@@ -1639,6 +1654,7 @@ export default function CreativePage() {
                 {selected?.type === "image" && <Button size="sm" variant="outline" icon={CropIcon} onClick={() => setCropping(selected)}>Cắt ảnh</Button>}
                 {selected && (
                   <>
+                    <Button size="icon" variant={inspectorOpen ? "soft" : "ghost"} icon={SlidersHorizontal} aria-label="Chi tiết thành phần" title="Chi tiết thành phần" onClick={() => setInspectorOpen((v) => !v)} />
                     <details key={selected.id} className="relative">
                       <summary className="cursor-pointer rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">Lớp</summary>
                       <div className="absolute right-0 z-30 mt-1 grid w-40 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
@@ -1651,10 +1667,10 @@ export default function CreativePage() {
                   </>
                 )}
               </div>
-              <div className="flex justify-center py-4">
+              <div ref={stageArea} className="creative-stage-area">
                 <div
                   ref={stageRef}
-                  className="relative shadow-lg ring-1 ring-slate-200 select-none"
+                  className="creative-stage relative select-none"
                   style={{ width: cur.w * scale, height: cur.h * scale, background: bgCss(cur.bg), touchAction: "none" }}
                   onPointerDown={() => setSel(null)}
                 >
@@ -1662,11 +1678,12 @@ export default function CreativePage() {
                     {cur.els.map((el) => (
                       <div
                         key={el.id}
-                        onPointerDown={(e) => startDrag(e, el, "move")}
+                        onPointerDown={pickElement}
                         onDoubleClick={() => {
-                          if (el.type === "image") setCropping(el)
-                          if (el.type === "text") {
-                            setSel(el.id)
+                          if (selected?.type === "image") setCropping(selected)
+                          if (selected?.type === "text") {
+                            setInspectorOpen(true)
+                            setSel(selected.id)
                             requestAnimationFrame(() => {
                               const field = textEditor.current?.querySelector("textarea")
                               field?.focus()
@@ -1721,7 +1738,7 @@ export default function CreativePage() {
             </div>
 
             {/* Properties */}
-            <Card className="h-fit p-4">
+            <Card className="creative-properties h-fit p-4">
               <h2 className="mb-3 text-sm font-semibold text-slate-800">{selected?.type === "text" ? "Sửa văn bản" : selected?.type === "image" ? "Chỉnh ảnh" : selected ? "Chỉnh hình khối" : "Thuộc tính"}</h2>
               {!selected ? (
                 <p className="text-sm text-slate-500">Chọn một thành phần trên thiết kế để chỉnh sửa.</p>
@@ -1757,6 +1774,13 @@ export default function CreativePage() {
                             <Label>Nội dung trên trang</Label>
                             <Textarea rows={3} value={selected.text ?? ""} onChange={(e) => updateEl(selected.id, { text: e.target.value })} />
                           </label>
+                    <Select aria-label="Độ đậm" value={selected.weight ?? 400} onChange={(e) => updateEl(selected.id, { weight: Number(e.target.value) }, "push")} className="h-9 w-full pr-6">
+                      <option value={400}>Thường</option>
+                      <option value={500}>Vừa</option>
+                      <option value={600}>Đậm vừa</option>
+                      <option value={700}>Đậm</option>
+                      <option value={800}>Rất đậm</option>
+                    </Select>
                           <Slider label="Giãn dòng" min={0.8} max={2.5} step={0.05} value={selected.lineHeight ?? 1.25} onChange={(v) => updateEl(selected.id, { lineHeight: v })} format={(v) => v.toFixed(2)} />
 
                         </>
@@ -1852,6 +1876,17 @@ export default function CreativePage() {
               )}
             </Card>
           </div>
+          <footer className="creative-footer">
+            <div className="creative-filmstrip" aria-label="Các trang thiết kế">
+              {(deck ? pages : [cur]).map((page, index) => <button key={page.id} aria-label={`Trang ${index + 1}: ${page.name}`} aria-current={page.id === curId ? "page" : undefined} className={cn("creative-page-thumb", page.id === curId && "is-active")} onClick={() => { setCurId(page.id); setSel(null) }}><span>{index + 1}</span><Mini d={page} maxW={120} maxH={68} /></button>)}
+              <button className="creative-add-page" aria-label="Thêm trang" onClick={() => addDesign({ ...blank(cur.w, cur.h, "Trang mới"), deck })}><Plus className="h-5 w-5" /></button>
+            </div>
+            <div className="creative-statusbar">
+              <span className="hidden sm:inline">{selected ? "Kéo để di chuyển · Shift để giữ tỉ lệ" : "Bấm vào thành phần để bắt đầu chỉnh sửa"}</span>
+              {deck && <div className="flex items-center gap-1"><Button size="icon" variant="ghost" icon={ChevronLeft} aria-label="Trang trước" disabled={pageIndex <= 0} onClick={() => { setCurId(pages[pageIndex - 1].id); setSel(null) }} /><span>{pageIndex + 1} / {pages.length} trang</span><Button size="icon" variant="ghost" icon={ChevronRight} aria-label="Trang tiếp" disabled={pageIndex >= pages.length - 1} onClick={() => { setCurId(pages[pageIndex + 1].id); setSel(null) }} /></div>}
+              <div className="ml-auto flex items-center gap-3"><button onClick={() => setZoom(1)} className="hover:text-violet-600">Vừa màn hình</button><input aria-label="Thu phóng" type="range" min="0.4" max="2" step="0.05" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /><span className="w-9 text-right">{Math.round(scale * 100)}%</span></div>
+            </div>
+          </footer>
         </>
       )}
 
@@ -1988,7 +2023,7 @@ export default function CreativePage() {
 
 /* ---------- Element view ---------- */
 
-function ElView({ el, scale }: { el: El; scale: number }) {
+const ElView = memo(function ElView({ el, scale }: { el: El; scale: number }) {
   const base: React.CSSProperties = { width: "100%", height: "100%", opacity: el.opacity }
   const boxShadow = el.shadow ? `0 ${10 * scale}px ${30 * scale}px rgba(0,0,0,0.35)` : undefined
   if (el.type === "rect") return <div style={{ ...base, background: el.fill, borderRadius: (el.radius ?? 0) * scale, boxShadow }} />
@@ -2011,6 +2046,8 @@ function ElView({ el, scale }: { el: El; scale: number }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={el.src}
+            loading="lazy"
+            decoding="async"
             alt=""
             draggable={false}
             style={{
@@ -2036,9 +2073,13 @@ function ElView({ el, scale }: { el: El; scale: number }) {
         fontSize: (el.fontSize ?? 48) * scale,
         fontWeight: el.weight,
         fontStyle: el.italic ? "italic" : undefined,
-        fontFamily: FONTS[el.font ?? "sans"],
+        fontFamily: fontFamily(el),
+        letterSpacing: (el.letterSpacing ?? 0) * scale,
         textAlign: el.align,
         lineHeight: el.lineHeight ?? 1.25,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: el.verticalAlign === "middle" ? "center" : el.verticalAlign === "bottom" ? "flex-end" : "flex-start",
         whiteSpace: "pre-wrap",
         overflowWrap: "break-word",
         textShadow: el.shadow ? `0 ${3 * scale}px ${12 * scale}px rgba(0,0,0,0.35)` : undefined,
@@ -2047,9 +2088,9 @@ function ElView({ el, scale }: { el: El; scale: number }) {
       {el.text}
     </div>
   )
-}
+})
 
-function Mini({ d, maxW, maxH }: { d: Omit<Design, "id" | "updatedAt">; maxW: number; maxH: number }) {
+const Mini = memo(function Mini({ d, maxW, maxH }: { d: Omit<Design, "id" | "updatedAt">; maxW: number; maxH: number }) {
   const s = Math.min(maxW / d.w, maxH / d.h)
   return (
     <div className="relative overflow-hidden rounded-md shadow-sm" style={{ width: d.w * s, height: d.h * s, background: bgCss(d.bg) }}>
@@ -2060,7 +2101,23 @@ function Mini({ d, maxW, maxH }: { d: Omit<Design, "id" | "updatedAt">; maxW: nu
       ))}
     </div>
   )
-}
+})
+
+const TemplateCover = memo(function TemplateCover({ deck }: { deck: CanvaDeckInfo }) {
+  const [slide, setSlide] = useState<Design | null>(null)
+  const [width, setWidth] = useState(320)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${deck.jsonPath}?v=2`, { signal: controller.signal }).then((r) => r.ok ? r.json() : []).then((slides: Design[]) => setSlide(slides[0] ?? null)).catch(() => {})
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+    if (ref.current) observer.observe(ref.current)
+    return () => { controller.abort(); observer.disconnect() }
+  }, [deck.jsonPath])
+  return <div ref={ref} className="absolute inset-0 grid place-items-center overflow-hidden" style={{ background: deck.paper }}>
+    {slide ? <Mini d={slide} maxW={width} maxH={width * 9 / 16} /> : <span className="text-sm" style={{ color: deck.accent }}>{deck.name}</span>}
+  </div>
+})
 
 /* ---------- Colour adjustments ---------- */
 
