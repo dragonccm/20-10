@@ -662,9 +662,9 @@ export default function CreativePage() {
       const img = await loadImg(finalSrc)
       const maxW = cur.w * 0.6
       const maxH = cur.h * 0.6
-      const s = Math.min(1, maxW / img.w, maxH / img.h)
-      const w = Math.round(img.w * s)
-      const h = Math.round(img.h * s)
+      const s = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight)
+      const w = Math.round(img.naturalWidth * s)
+      const h = Math.round(img.naturalHeight * s)
       const x = Math.round((cur.w - w) / 2)
       const y = Math.round((cur.h - h) / 2)
       addEl({
@@ -677,8 +677,8 @@ export default function CreativePage() {
         opacity: 1,
         radius: 0,
         src: finalSrc,
-        nw: img.w,
-        nh: img.h,
+        nw: img.naturalWidth,
+        nh: img.naturalHeight,
         cutout: finalCutout || undefined,
       })
       setShowImageGenModal(false)
@@ -1270,7 +1270,7 @@ export default function CreativePage() {
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-[160px]">
                     <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
-                    <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v as AiAspectRatio)} className="mt-1 bg-white">
+                    <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v.target.value as AiAspectRatio)} className="mt-1 bg-white">
                       {AI_ASPECT_RATIOS.map((r) => (
                         <option key={r.value} value={r.value}>
                           {r.label}
@@ -1926,7 +1926,7 @@ export default function CreativePage() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[160px]">
                   <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
-                  <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v as AiAspectRatio)} className="mt-1 bg-white">
+                  <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v.target.value as AiAspectRatio)} className="mt-1 bg-white">
                     {AI_ASPECT_RATIOS.map((r) => (
                       <option key={r.value} value={r.value}>
                         {r.label}
