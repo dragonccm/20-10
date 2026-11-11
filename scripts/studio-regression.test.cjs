@@ -67,3 +67,14 @@ test('replacing a framed photo preserves natural aspect ratio', () => {
  assert.ok(Math.abs(portrait.h-2/3)<1e-10)
  assert.deepEqual(coverCrop(0,300,100,100),{x:0,y:0,w:1,h:1})
 })
+test('all inline Tiny scripts parse and the flower frame remains a valid string', () => {
+ const vm=require('node:vm'),html=fs.readFileSync(path.join(root,'public/tiny.html'),'utf8')
+ let count=0
+ for(const [,attrs,body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)){
+  if(/\bsrc=|application\/(ld\+)?json/i.test(attrs))continue
+  assert.doesNotThrow(()=>new vm.Script(body),attrs);count++
+ }
+ assert.equal(count,15)
+ const flower=html.match(/const flowerDoc = ("[^\n]+?");/)
+ assert.ok(flower);assert.ok(JSON.parse(flower[1]).endsWith('</body></html>'))
+})
