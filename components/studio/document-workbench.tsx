@@ -3,7 +3,7 @@ import { DocumentCards } from "./document-cards"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Button, Card, Input, Label, Textarea, Select } from "./ui"
+import { HelpDetails, Button, Card, Input, Label, Textarea, Select } from "./ui"
 import { callAi } from "@/lib/studio/ai"
 import { idbGet } from "@/lib/studio/idb"
 import { parseFile, renderPdfPages } from "@/lib/studio/docparse"
@@ -191,7 +191,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
       const result = await callAi<{ text: string }>(
         "document-transform",
         {
-          text: `Viết báo cáo bằng tiếng Việt từ các ý chính sau, ghi tên tài liệu ${doc.name}. Phần kết nêu giới hạn vì đây là bản tổng hợp từ tài liệu, không tự xác minh bên ngoài.\n${notesText(brief,marker)}`,
+          text: `Viết báo cáo bằng tiếng Việt từ các ý chính sau, ghi tên tài liệu ${doc.name}. Phần kết nêu giới hạn vì đây là bản tổng hợp từ tài liệu, không tự xác minh bên ngoài.\n${notesText(brief, marker)}`,
         },
         signal,
       )
@@ -309,7 +309,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
               })
             }
           >
-            Đọc và giữ ý chính
+            Lấy ý chính
           </Button>
           <Button
             disabled={!!busy || !chunks.length}
@@ -323,24 +323,31 @@ export function DocumentWorkbench({ doc, update }: Props) {
             variant="outline"
             onClick={() => product("report")}
           >
-            Làm bản nháp báo cáo
+            Tạo báo cáo
           </Button>
           <Button
             disabled={!!busy || !chunks.length}
             variant="outline"
             onClick={() => product("slides")}
           >
-            Làm slide ý chính
-          </Button>
-          <Button disabled={!!busy} variant="ghost" onClick={reread}>
-            Đọc lại toàn bộ tệp gốc
+            Tạo slide
           </Button>
         </div>
-        <p className="mt-3 text-xs leading-6 text-slate-500">
-          Khi bạn chọn đọc ý chính, AI sẽ lần lượt xử lý {chunks.length} đoạn có
-          chữ, có thể mất nhiều lượt. Ghi chú đã xong được giữ để tiếp tục. Kiểm
-          tra nguồn vẫn cần thiết, đặc biệt với số liệu và bản scan.
-        </p>
+        <HelpDetails summary="Cách đọc & kiểm tra nguồn">
+          <p>
+            AI lần lượt đọc {chunks.length} đoạn có chữ và giữ các ghi chú đã
+            xong. Bạn có thể dừng rồi tiếp tục. Hãy đối chiếu số liệu và chữ
+            nhận diện từ bản scan.
+          </p>
+          <Button
+            className="mt-2"
+            disabled={!!busy}
+            variant="ghost"
+            onClick={reread}
+          >
+            Đọc lại tệp gốc
+          </Button>
+        </HelpDetails>
         {busy && (
           <div
             className="mt-3 flex items-center justify-between gap-3 text-sm"
@@ -364,9 +371,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="space-y-4">
           <Card className="p-4">
-            <h3 className="mb-3 font-medium">
-              Bạn muốn hỏi điều gì về tài liệu?
-            </h3>
+            <h3 className="mb-3 font-medium">Hỏi về tài liệu</h3>
             <Textarea
               aria-label="Câu hỏi về tài liệu"
               value={question}
@@ -378,7 +383,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
               disabled={!!busy || !question.trim()}
               onClick={ask}
             >
-              Tìm câu trả lời trong nguồn
+              Tìm câu trả lời
             </Button>
             {answer && (
               <div className="mt-4 whitespace-pre-wrap text-sm leading-7">
@@ -393,13 +398,13 @@ export function DocumentWorkbench({ doc, update }: Props) {
                 variant={view === "notes" ? "primary" : "ghost"}
                 onClick={() => setView("notes")}
               >
-                Theo từng phần
+                Ghi chú
               </Button>
               <Button
                 variant={view === "brief" ? "primary" : "ghost"}
                 onClick={() => setView("brief")}
               >
-                Ý chính tối lược
+                Tối lược
               </Button>
               <Button
                 variant={view === "map" ? "primary" : "ghost"}
@@ -417,7 +422,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
                 variant={view === "plan" ? "primary" : "ghost"}
                 onClick={() => setView("plan")}
               >
-                Gợi ý chia buổi học
+                Chia buổi học
               </Button>
             </div>
             {["notes", "brief"].includes(view) ? (
@@ -429,7 +434,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
                       onClick={() =>
                         downloadFile(
                           `${safeFileName(doc.name)}-ghi-chu.txt`,
-                          notesText(notes,marker),
+                          notesText(notes, marker),
                           "text/plain;charset=utf-8",
                         )
                       }
@@ -448,9 +453,8 @@ export function DocumentWorkbench({ doc, update }: Props) {
                   </>
                 ) : (
                   <p className="text-sm leading-7 text-slate-500">
-                    Chọn “Đọc và giữ ý chính” khi bạn muốn bắt đầu. Bản tối lược
-                    sẽ gom ý từ các phần đã đọc, không bỏ phần cuối để vừa một
-                    lượt AI.
+                    Chọn “Lấy ý chính” khi bạn muốn bắt đầu. Bản tối lược sẽ gom
+                    ý từ các phần đã đọc, không bỏ phần cuối để vừa một lượt AI.
                   </p>
                 )}
               </>

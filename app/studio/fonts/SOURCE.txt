@@ -1,0 +1,7 @@
+Plus Jakarta Sans variable upright, weights 200–800.
+Source: https://github.com/google/fonts/tree/main/ofl/plusjakartasans
+Original: PlusJakartaSans[wght].ttf
+Downloaded: 2026-11-12
+Packaged as WOFF2 using fontTools; glyphs and naming retained.
+License: SIL Open Font License 1.1, see OFL.txt.
+Vietnamese UI glyph coverage checked before packaging.

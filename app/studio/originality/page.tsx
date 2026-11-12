@@ -26,7 +26,7 @@ export default function OriginalityPage() {
         icon={tool.icon}
         tint={tool.tint}
         title={tool.name} guide={tool.guide}
-        desc="Tự rà soát trước khi nộp: trích dẫn có khớp danh mục không, đoạn nào trùng với nguồn bạn đã đọc, văn phong đã đủ học thuật chưa."
+        desc="Cùng xem lại nguồn và cách diễn đạt trong bài."
       />
       <Card className="mb-4 p-4">
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">

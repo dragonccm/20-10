@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { Button, Card, Input, Label, Select, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
 import { callAi } from "@/lib/studio/ai"
 import {
   lookupDoi,
@@ -239,12 +239,16 @@ export function CitationCompanion({
   return (
     <Card className="space-y-4 p-4">
       <h3 className="font-medium">Cùng xem bài và nguồn</h3>
-      <p className="text-xs leading-6 text-slate-500">
-        Mình tìm những ý có thể cần nguồn và tra bài có thật. DOI tồn tại chỉ
-        xác nhận thông tin thư mục; để biết nguồn có hỗ trợ ý hay không, cần đối
-        chiếu đoạn tóm tắt hoặc nội dung nguồn. Từ khóa tìm kiếm được gửi tới
-        Crossref; AI chỉ đọc bài khi bạn chọn bắt đầu.
+      <p className="text-xs leading-relaxed text-slate-500">
+        Đọc bài, tìm nguồn rồi đối chiếu bằng chứng.
       </p>
+      <HelpDetails summary="Nguồn được kiểm tra thế nào?">
+        <p>
+          DOI xác nhận thông tin thư mục, không chứng minh nguồn hỗ trợ ý đang
+          viết. Hãy đối chiếu tóm tắt hoặc toàn văn trước khi chèn. AI đọc bài
+          khi bạn chọn bắt đầu; từ khóa tìm được gửi tới Crossref.
+        </p>
+      </HelpDetails>
       <Button
         loading={busy === "read"}
         disabled={!!busy || !essay.trim()}
@@ -398,11 +402,18 @@ export function CitationCompanion({
                 >
                   {ref.title}
                 </a>
-                <p className="my-2 text-xs leading-6">{refText(ref, style)}</p>
-                <p className="text-[11px] text-slate-400">
-                  Metadata từ Crossref · Chưa phải xác nhận chất lượng hay độ
-                  phù hợp của nguồn
+                <p className="my-2 text-xs text-slate-500">
+                  {ref.authors[0]?.family || "Chưa rõ tác giả"}
+                  {ref.authors.length > 1 ? " và cộng sự" : ""} ·{" "}
+                  {ref.year || "Chưa rõ năm"}
                 </p>
+                <HelpDetails summary="Thông tin trích dẫn">
+                  <p>{refText(ref, style)}</p>
+                  <p>
+                    Metadata từ Crossref; cần đọc nội dung để đánh giá độ phù
+                    hợp.
+                  </p>
+                </HelpDetails>
                 {ref.abstract && (
                   <details className="mt-2 text-xs leading-6">
                     <summary>Đọc đoạn tóm tắt có sẵn</summary>

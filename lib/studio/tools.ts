@@ -7,9 +7,9 @@ export const TOOLS: Tool[] = [
  {slug:"helpers",name:"Những việc nhỏ",short:"Việc nhỏ",desc:"Soạn email, đổi tên và định dạng file, điền mẫu Word hoặc chọn một khoảng tập trung.",icon:FolderOpen,tint:"bg-teal-100 text-teal-700",guide:{id:"helpers",steps:["Chọn việc bạn đang cần.","Xem trước và tải một bản mới; file gốc vẫn được giữ.","Email chỉ là bản nháp để bạn đọc và tự gửi."]}},
   {
     slug: "documents",
-    name: "Tài liệu của tôi",
+    name: "Tài liệu",
     short: "Tài liệu",
-    desc: "Tải lên essay, CV, slide, PDF hay ảnh chụp. AI nhận xét, tóm tắt, hỏi đáp, tạo câu ôn tập và chuyển sang công cụ khác.",
+    desc: "Đọc, hỏi và tìm ý chính từ tài liệu của bạn.",
     icon: FolderOpen,
     tint: "bg-indigo-100 text-indigo-600",
     guide: {
@@ -17,17 +17,17 @@ export const TOOLS: Tool[] = [
       steps: [
         "Kéo thả hoặc bấm Chọn tệp để tải lên PDF, Word, PowerPoint hay ảnh chụp tài liệu.",
         "Kiểm tra ô “Đây là” (bài luận, CV, slide...). Web tự đoán, sai thì đổi lại.",
-        "Dùng các tab AI nhận xét, Hỏi đáp, Ôn tập để AI đọc và giúp bạn hiểu tài liệu.",
+        "Chọn “Cùng tài liệu” để lấy ý chính, hỏi đáp hoặc làm thẻ ôn tập.",
         "Muốn sửa tiếp thì bấm nút tím ở “Chuyển sang công cụ”: mở trong trang Viết bài, trình tạo CV hoặc Thiết kế.",
       ],
-      tip: "Tệp chỉ được đọc ngay trên máy này. Chỉ phần chữ được gửi cho AI khi bạn bấm một nút AI.",
+      tip: "Tệp chỉ được đọc ngay trên máy này. Chữ hoặc trang scan bạn chọn chỉ gửi cho AI khi bạn chủ động dùng.",
     },
   },
   {
     slug: "writing",
     name: "Viết bài",
     short: "Viết",
-    desc: "Soạn và sửa essay: AI sửa từng lỗi kèm giải thích, tìm nguồn trích dẫn cho đoạn văn, xuất Word/PDF.",
+    desc: "Viết nháp, sửa câu và hoàn thiện bài.",
     icon: PenLine,
     tint: "bg-rose-100 text-rose-600",
     guide: {
@@ -43,9 +43,9 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "research",
-    name: "Thư viện nguồn",
+    name: "Nguồn tham khảo",
     short: "Nguồn",
-    desc: "Tìm bài báo khoa học theo tên hoặc DOI, lưu vào thư viện và lấy danh mục tài liệu tham khảo theo APA, MLA...",
+    desc: "Tìm nguồn, lưu lại và lấy trích dẫn.",
     icon: Search,
     tint: "bg-sky-100 text-sky-600",
     guide: {
@@ -60,7 +60,7 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "originality",
-    name: "Xem lại bài cùng mình",
+    name: "Xem lại bài",
     short: "Kiểm tra",
     desc: "Rà lần cuối trước khi nộp: trích dẫn có khớp danh mục không, có đoạn nào chép nguyên văn nguồn không, văn phong đủ học thuật chưa.",
     icon: ScanSearch,
@@ -78,7 +78,7 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "korean",
-    name: "Một chút ngoại ngữ",
+    name: "Ngoại ngữ",
     short: "Ngoại ngữ",
     desc: "Ôn từ vựng tiếng Hàn & tiếng Anh học thuật AWL bằng thẻ lặp lại ngắt quãng, nghe phát âm và AI kiểm tra câu.",
     icon: Languages,

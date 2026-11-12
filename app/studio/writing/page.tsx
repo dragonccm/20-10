@@ -411,7 +411,7 @@ export default function WritingPage() {
         icon={tool.icon}
         tint={tool.tint}
         title={tool.name} guide={tool.guide}
-        desc="Viết, tự kiểm tra và hoàn thiện bài của bạn. Mỗi gợi ý AI đều có giải thích và bạn quyết định giữ hay bỏ."
+        desc="Viết nháp, sửa câu và hoàn thiện theo ý bạn."
         actions={
           <>
             <input
@@ -473,7 +473,7 @@ export default function WritingPage() {
               <input
                 value={active.title}
                 onChange={(e) => updateDoc(active.id, (d) => ({ ...d, title: e.target.value, updatedAt: Date.now() }))}
-                className="mt-4 w-full bg-transparent font-serif text-2xl text-slate-800 outline-none placeholder:text-slate-300"
+                className="mt-4 w-full bg-transparent font-semibold text-2xl text-slate-800 outline-none placeholder:text-slate-300"
                 placeholder="Tiêu đề bài viết"
               />
 

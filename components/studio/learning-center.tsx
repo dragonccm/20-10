@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Button, Card, Input, Label, Select, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
 import {
   LEARNING_SOURCES,
   LEARNING_UNITS,
@@ -255,21 +255,20 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <h2 className="font-serif text-2xl">Chọn cách học hợp với lúc này</h2>
-        <p className="mt-3 text-sm leading-7 text-slate-500">
-          Mình có thể giúp bạn tìm một chỗ bắt đầu, thử một đoạn hội thoại hay
-          cùng xem bài viết. Lộ trình là gợi ý để chọn, không đặt lịch hoặc yêu
-          cầu học đủ.
+        <h2 className="font-semibold text-xl">Bạn muốn thử điều gì?</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Chọn chủ đề hoặc cùng luyện một chút, theo nhịp bạn.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {[
-            ["path", "Tìm chỗ bắt đầu"],
+            ["path", "Chủ đề"],
             ["practice", "Cùng luyện"],
-            ["sources", "Nguồn chính thức"],
-            ["focus", "Khoảng tập trung"],
+            ["sources", "Nguồn học"],
+            ["focus", "Tập trung"],
           ].map(([id, label]) => (
             <Button
               key={id}
+              size="sm"
               variant={view === id ? "primary" : "outline"}
               onClick={() => setView(id)}
             >
@@ -278,21 +277,16 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
           ))}
           <Link
             href="/studio/documents"
-            className="rounded-xl border border-violet-100 px-4 py-2 text-sm text-violet-600"
+            className="inline-flex h-8 items-center rounded-xl border border-violet-100 px-3 text-xs text-violet-600"
           >
-            Học từ tài liệu của mình
+            Dùng tài liệu
           </Link>
         </div>
       </Card>
       {view === "path" && (
         <>
           <Card className="p-5">
-            <h3 className="font-medium">Nếu chưa biết chọn mức nào</h3>
-            <p className="my-3 text-sm leading-7 text-slate-500">
-              Bạn có thể tự chọn một chủ đề bên dưới, hoặc thử ba câu để tìm
-              điểm bắt đầu. Đây không phải bài xác định CEFR/TOPIK hay đánh giá
-              năng lực toàn diện.
-            </p>
+
             <Button
               variant="outline"
               onClick={() => {
@@ -300,10 +294,13 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
                 setDiagnosed(false)
               }}
             >
-              {assessment ? "Để lúc khác" : "Thử vài câu gợi ý"}
+              {assessment ? "Để lúc khác" : "Chưa biết chọn mức nào?"}
             </Button>
             {assessment && (
               <div className="mt-4 space-y-5">
+                <p className="text-xs text-slate-500">
+                  Chỉ để gợi ý điểm bắt đầu, không đánh giá CEFR/TOPIK.
+                </p>
                 {questions.map((q, i) => (
                   <div key={i}>
                     <p className="mb-2 text-sm">{q.q}</p>
@@ -356,9 +353,6 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
                   {u.level} · {SKILLS[u.skill] || u.skill}
                 </small>
                 <h3 className="mt-2 font-medium">{u.title}</h3>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
-                  {u.practice}
-                </p>
               </button>
             ))}
           </div>

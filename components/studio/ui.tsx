@@ -20,7 +20,7 @@ export function Button({ variant = "primary", size = "md", icon: Icon, loading, 
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-xl font-medium transition focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex shrink-0 items-center justify-center rounded-xl font-medium leading-snug transition focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         {
           primary: "bg-violet-600 text-white shadow-sm hover:bg-violet-700",
           soft: "bg-violet-100 text-violet-700 hover:bg-violet-200",
@@ -81,7 +81,7 @@ export function PageHeader({
   desc: string
   tint: string
   actions?: React.ReactNode
-  /** Numbered "how to use" steps, open the first time and remembered once dismissed. */
+  /** Optional instructions, opened on request. */
   guide?: GuideSpec
 }) {
   const [open, setOpen, loaded] = useStored(`bloom.guide.${guide?.id ?? "none"}`, false)
@@ -89,20 +89,20 @@ export function PageHeader({
   return (
     <div className="mb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 flex-1 basis-52 items-start gap-3">
           <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl", tint)}>
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-slate-800 sm:text-2xl">{title}</h1>
-            <p className="mt-0.5 text-sm text-slate-500">{desc}</p>
+            <p className="studio-page-description mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">{desc}</p>
           </div>
         </div>
         {(actions || (guide && loaded && !open)) && (
           <div className="flex flex-wrap gap-2">
             {guide && loaded && !open && (
-              <Button variant="ghost" icon={CircleHelp} onClick={() => setOpen(true)}>
-                Cách dùng
+              <Button aria-label="Cách dùng" className="max-sm:w-9 max-sm:px-0" variant="ghost" icon={CircleHelp} onClick={() => setOpen(true)}>
+                <span className="hidden sm:inline">Cách dùng</span>
               </Button>
             )}
             {actions}
@@ -282,4 +282,9 @@ export function Markdown({ text }: { text: string }) {
       })}
     </div>
   )
+}
+
+/** Secondary explanations stay available without competing with the task. */
+export function HelpDetails({summary="Cách dùng & lưu ý",children}:{summary?:string;children:React.ReactNode}){
+ return <details className="studio-help"><summary>{summary}</summary><div className="studio-help-content">{children}</div></details>
 }

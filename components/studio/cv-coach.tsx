@@ -1,7 +1,7 @@
 "use client"
 import { useRef, useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Button, Card, Label, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Label, Textarea } from "./ui"
 import { callAi } from "@/lib/studio/ai"
 import type { CV } from "@/lib/studio/cv-data"
 export function CvCoach({
@@ -63,11 +63,16 @@ export function CvCoach({
   return (
     <Card className="space-y-3 p-4">
       <h3 className="font-medium">Kể rõ hơn những điều bạn đã làm</h3>
-      <p className="text-xs leading-6 text-slate-500">
-        Mình nhờ AI gợi ý cách diễn đạt từ hồ sơ hiện có. AI có thể thêm sai ý;
-        bạn kiểm tra công việc, số liệu và kỹ năng trước khi giữ. Thông tin liên
-        hệ và ảnh không cần gửi cho gợi ý này.
+      <p className="text-xs leading-relaxed text-slate-500">
+        AI gợi ý cách viết; bạn kiểm tra dữ kiện trước khi giữ.
       </p>
+      <HelpDetails summary="AI xem phần nào của CV?">
+        <p>
+          Gợi ý dùng nội dung hồ sơ và mô tả công việc bạn đưa vào. Không gửi
+          ảnh hay thông tin liên hệ. Hãy đối chiếu công việc, số liệu và kỹ năng
+          trong bản đề xuất.
+        </p>
+      </HelpDetails>
       <Label>Vị trí muốn ứng tuyển / yêu cầu công việc (nếu có)</Label>
       <Textarea
         rows={4}

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
-import { Button, Card, Input, Label } from "./ui"
+import { HelpDetails, Button, Card, Input, Label } from "./ui"
 export function FocusTimer() {
   const [minutes, setMinutes] = useState(25),
     [remaining, setRemaining] = useState(25 * 60),
@@ -26,12 +26,16 @@ export function FocusTimer() {
   }, [running])
   return (
     <Card className="mx-auto max-w-xl space-y-5 p-7 text-center">
-      <h2 className="font-serif text-2xl">Một khoảng dành cho điều bạn chọn</h2>
-      <p className="text-sm leading-7 text-slate-500">
-        Bạn có thể dùng cách Pomodoro để chia một khoảng tập trung rồi nghỉ. Đổi
-        thời lượng, tạm dừng hay kết thúc sớm đều được; ứng dụng không giữ chuỗi
-        ngày hoặc nhắc quay lại.
+      <h2 className="font-semibold text-2xl">Một khoảng tập trung</h2>
+      <p className="text-sm leading-relaxed text-slate-500">
+        Chọn một khoảng tập trung. Nghỉ hay dừng lúc nào cũng được.
       </p>
+      <HelpDetails summary="Về cách Pomodoro">
+        <p>
+          Chia việc thành một khoảng tập trung rồi nghỉ. Bạn tự đổi thời lượng;
+          ứng dụng không giữ chuỗi ngày hay nhắc quay lại.
+        </p>
+      </HelpDetails>
       <label className="mx-auto block max-w-36">
         <Label>Số phút bạn muốn</Label>
         <Input
@@ -51,7 +55,7 @@ export function FocusTimer() {
       <div
         role="timer"
         aria-label="Thời gian còn lại"
-        className="font-serif text-6xl text-violet-700"
+        className="font-semibold text-6xl text-violet-700"
       >
         {String(Math.floor(remaining / 60)).padStart(2, "0")}:
         {String(remaining % 60).padStart(2, "0")}

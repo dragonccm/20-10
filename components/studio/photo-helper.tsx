@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useRef, useState, type PointerEvent } from "react"
 import { toast } from "sonner"
-import { Button, Card, Input, Label, Select, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
 import { fileToDataUrl, loadImg } from "@/lib/studio/image"
 import {
   colorRegion,
@@ -282,12 +282,16 @@ export function PhotoHelper() {
   return (
     <div className="space-y-4">
       <Card className="space-y-4 p-5">
-        <h2 className="font-serif text-2xl">Sửa một vùng nhỏ trong ảnh</h2>
-        <p className="text-sm leading-7 text-slate-500">
-          Bấm vùng màu gần nhau hoặc tô lên chỗ muốn sửa. Xem trước, hoàn tác
-          rồi tải bản mới; file gốc không thay đổi. Ảnh được tối ưu cạnh dài tối
-          đa 1600px cho công cụ này.
+        <h2 className="font-semibold text-2xl">Sửa một vùng nhỏ trong ảnh</h2>
+        <p className="text-sm text-slate-500">
+          Bấm hoặc tô vùng cần sửa, rồi xem trước.
         </p>
+        <HelpDetails summary="Cách chọn vùng ảnh">
+          <p>
+            Chọn vùng màu gần nhau hoặc dùng nét tô. Bạn có thể hoàn tác và tải
+            một bản mới. Công cụ tối ưu ảnh ở cạnh dài tối đa 1600px.
+          </p>
+        </HelpDetails>
         <input
           aria-label="Chọn ảnh để chỉnh vùng"
           type="file"
@@ -424,9 +428,7 @@ export function PhotoHelper() {
               </Button>
             </div>
             <p className="text-xs leading-6 text-slate-500">
-              Xóa vật thể ở đây là lấp vùng bằng màu nền lân cận, phù hợp vật
-              thể nhỏ trên nền đơn giản. Nền nhiều chi tiết có thể để lại vệt;
-              bạn xem trước và hoàn tác nếu chưa phù hợp.
+              Hợp vật thể nhỏ trên nền đơn giản; có thể để lại vệt.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -434,7 +436,7 @@ export function PhotoHelper() {
                 variant="outline"
                 onClick={() => ai("select")}
               >
-                Chọn chủ thể bằng mô hình trên máy
+                Chọn chủ thể
               </Button>
               <Button
                 disabled={!!busy}
@@ -444,7 +446,7 @@ export function PhotoHelper() {
                 Tách nền trên máy
               </Button>
               <Button disabled={!!busy} variant="outline" onClick={toEditor}>
-                Cắt ảnh / chèn chữ trong Thiết kế
+                Cắt ảnh / thêm chữ
               </Button>
               <Button
                 disabled={!!busy}
@@ -462,16 +464,15 @@ export function PhotoHelper() {
       </Card>
       {src && (
         <Card className="space-y-3 p-5">
-          <h3 className="font-medium">Một gợi ý phong cách, nếu bạn muốn</h3>
+          <h3 className="font-medium">Gợi ý phong cách</h3>
           <Textarea
             rows={3}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Ví dụ: dịu hơn, tự nhiên, hợp với ảnh CV…"
           />
-          <p className="text-xs leading-6 text-slate-500">
-            Khi chọn nút này, bản xem trước cạnh tối đa 640px được gửi tới dịch
-            vụ AI. Gợi ý chưa tự thay ảnh của bạn.
+          <p className="text-xs text-slate-500">
+            Nút này gửi bản xem trước 640px cho AI. Bạn chọn áp dụng sau.
           </p>
           <Button disabled={!!busy} onClick={() => ai("style")}>
             Nhờ AI gợi ý phong cách

@@ -8,7 +8,7 @@ const PhotoHelper = dynamic(
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Button, Card, Input, Label, Select, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
 import { callAi } from "@/lib/studio/ai"
 import {
   copyText,
@@ -54,20 +54,21 @@ export function SmallHelpers() {
         <p className="text-xs tracking-widest text-violet-400">
           NHỮNG VIỆC NHỎ
         </p>
-        <h1 className="mt-3 font-serif text-3xl">Bạn muốn gỡ rối việc nào?</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-500">
-          Chọn một việc đang cần. Các công cụ chỉ chạy khi bạn chọn. File được
-          xử lý trên thiết bị; email và gợi ý phong cách ảnh dùng AI theo yêu
-          cầu của bạn.
+        <h1 className="mt-2 font-semibold text-2xl">Bạn cần giúp việc gì?</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Viết email, sửa file hay chỉnh một tấm ảnh.
         </p>
       </header>
-      <div className="flex flex-wrap gap-2">
+      <div
+        aria-label="Chọn việc cần giúp"
+        className="studio-task-tabs flex flex-wrap gap-2"
+      >
         {[
           ["email", "Viết email"],
-          ["files", "Sắp xếp & đổi file"],
-          ["template", "Điền đúng mẫu Word"],
-          ["focus", "Một khoảng tập trung"],
-          ["photos", "Sửa ảnh từng vùng"],
+          ["files", "Sửa file"],
+          ["template", "Mẫu Word"],
+          ["focus", "Tập trung"],
+          ["photos", "Chỉnh ảnh"],
         ].map(([id, label]) => (
           <Button
             key={id}
@@ -129,7 +130,7 @@ function EmailComposer() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="space-y-4 p-5">
-        <h2 className="font-medium">Một email cho đúng dịp</h2>
+        <h2 className="font-medium">Bạn muốn nói điều gì?</h2>
         <label className="block">
           <Label>Mục đích</Label>
           <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
@@ -152,7 +153,7 @@ function EmailComposer() {
             rows={7}
             value={facts}
             onChange={(e) => setFacts(e.target.value)}
-            placeholder="Bạn có thể kể bằng vài gạch đầu dòng. Thông tin chưa có sẽ để chỗ trống, không tự bịa."
+            placeholder="Kể vài ý chính, mình giúp bạn viết."
           />
         </label>
         <label className="block">
@@ -190,7 +191,7 @@ function EmailComposer() {
         </div>
       </Card>
       <Card className="space-y-4 p-5">
-        <h2 className="font-medium">Bạn đọc và sửa trước khi gửi</h2>
+        <h2 className="font-medium">Bản nháp của bạn</h2>
         <label className="block">
           <Label>Tiêu đề email</Label>
           <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
@@ -240,8 +241,7 @@ function EmailComposer() {
           </Button>
         </div>
         <p className="text-xs leading-6 text-slate-500">
-          Ứng dụng không gửi email và không truy cập hộp thư. Bạn tự chọn người
-          nhận khi mở bản nháp trong ứng dụng mail.
+          Chỉ tạo bản nháp; bạn tự gửi từ ứng dụng mail.
         </p>
       </Card>
     </div>
@@ -549,11 +549,13 @@ function FileHelpers() {
           </div>
         ))}
       </div>
-      <p className="text-xs leading-6 text-slate-500">
-        Thứ tự trên là thứ tự trong file ghép. PDF scan không có lớp chữ cần
-        được đọc chữ ở Tài liệu trước khi lấy TXT. Đổi tên không đổi định dạng
-        nội dung.
-      </p>
+      <p className="text-xs text-slate-500">File gốc được giữ nguyên.</p>
+      <HelpDetails summary="Trước khi chuyển file">
+        <p>
+          Thứ tự trên là thứ tự ghép. PDF scan cần đọc chữ ở Tài liệu trước khi
+          lấy TXT. Đổi tên không thay định dạng nội dung.
+        </p>
+      </HelpDetails>
       <Button loading={busy} disabled={!files.length} onClick={run}>
         Tạo bản tải về
       </Button>
@@ -688,14 +690,18 @@ function WordTemplates() {
   }
   return (
     <Card className="space-y-4 p-5">
-      <h2 className="font-medium">Điền nội dung, giữ bố cục của mẫu Word</h2>
-      <p className="text-sm leading-7 text-slate-500">
-        Trong file .docx của bạn, đặt các vùng như {"{{title}}"}, {"{{body}}"},{" "}
-        {"{{name}}"}, {"{{experience}}"} ở đúng vị trí. Ứng dụng thay chữ trong
-        các vùng đó và giữ nguyên các phần còn lại, gồm kiểu chữ, bảng, ảnh, lề,
-        header/footer. Nội dung quá dài vẫn có thể làm Word dàn sang trang mới;
-        hãy mở file để kiểm tra trước khi dùng.
+      <h2 className="font-medium">Điền mẫu Word</h2>
+      <p className="text-sm text-slate-500">
+        Chọn mẫu, điền nội dung rồi tải bản mới.
       </p>
+      <HelpDetails summary="Điền mẫu như thế nào?">
+        <p>
+          Ứng dụng giữ kiểu chữ, bảng, ảnh, lề và header/footer của mẫu. Bạn có
+          thể thay các vùng như {"{{title}}"}, {"{{body}}"} hoặc chọn từng đoạn
+          để điền. Nội dung dài có thể dàn sang trang mới; hãy mở bản xuất để
+          xem lại.
+        </p>
+      </HelpDetails>
       <div className="flex flex-wrap gap-3">
         <input
           aria-label="Tải mẫu Word"
@@ -722,13 +728,14 @@ function WordTemplates() {
               Lấy thông tin CV đã lưu
             </Button>
           </div>
-          <p className="text-xs leading-6 text-slate-500">
-            CV hỗ trợ name, title, email, phone, location, link, summary,
-            education, experience, projects, skills, languages, certificates.
-            Các vùng khác bạn điền bên dưới. Nếu mẫu không có vùng đánh dấu, bạn
-            có thể chọn các đoạn cần thay ở bên dưới; những đoạn không chọn sẽ
-            được giữ nguyên.
-          </p>
+          <HelpDetails summary="Các vùng điền được hỗ trợ">
+            <p>
+              CV: name, title, email, phone, location, link, summary, education,
+              experience, projects, skills, languages, certificates. Các vùng
+              khác bạn tự điền. Mẫu không có vùng đánh dấu vẫn có thể thay từng
+              đoạn bên dưới.
+            </p>
+          </HelpDetails>
           <details
             open={!fields.length}
             className="rounded-xl border border-violet-100 p-4"

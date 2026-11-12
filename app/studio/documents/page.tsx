@@ -193,7 +193,7 @@ export default function DocumentsPage() {
         icon={tool.icon}
         tint={tool.tint}
         title={tool.name} guide={tool.guide}
-        desc="Tải lên essay, CV, slide hay bài thuyết trình có sẵn. AI nhận xét, tóm tắt, trả lời câu hỏi, tạo câu ôn tập, hoặc chuyển sang công cụ khác để chỉnh sửa tiếp."
+        desc="Mang tài liệu vào, cùng tìm điều bạn cần."
       />
       <AiNotice />
 
@@ -217,8 +217,8 @@ export default function DocumentsPage() {
           <Upload className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-slate-800">Kéo thả tệp vào đây, hoặc bấm Chọn tệp</p>
-          <p className="mt-0.5 text-sm text-slate-500">PDF, Word (.docx), PowerPoint (.pptx), ảnh chụp tài liệu (JPG, PNG), .txt. Tối đa 40MB mỗi tệp.</p>
+          <p className="font-medium text-slate-800">Thả tài liệu vào đây</p>
+          <p className="mt-0.5 text-sm text-slate-500">PDF, Word, slide, ảnh hoặc TXT · tối đa 40 MB.</p>
           {busy.length > 0 && <p className="mt-1 text-sm text-violet-700">Đang đọc: {busy.join(", ")}...</p>}
         </div>
         <input

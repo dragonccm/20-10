@@ -25,7 +25,7 @@ export default function CareerPage() {
   const [tab, setTab] = useState<"cv" | "letter" | "interview">("cv")
   return (
     <div>
-      <PageHeader icon={tool.icon} tint={tool.tint} title={tool.name} guide={tool.guide} desc="Chuẩn bị hồ sơ xin việc, thực tập: CV ba ngôn ngữ, thư xin việc và luyện trả lời phỏng vấn." />
+      <PageHeader icon={tool.icon} tint={tool.tint} title={tool.name} guide={tool.guide} desc="Sắp xếp hồ sơ và kể rõ những điều bạn đã làm." />
       <Tabs
         value={tab}
         onChange={setTab}
@@ -731,7 +731,7 @@ function Interview() {
             Câu khác
           </Button>
         </div>
-        <p className="mt-5 font-serif text-2xl leading-snug text-slate-800">{question}</p>
+        <p className="mt-5 font-semibold text-2xl leading-snug text-slate-800">{question}</p>
         <div className="mt-5 flex items-center gap-3">
           <span className={cn("font-mono text-2xl tabular-nums", seconds > 120 ? "text-rose-600" : "text-slate-700")}>{mm}</span>
           <Button size="sm" variant="soft" icon={running ? Pause : Play} onClick={() => setRunning((r) => !r)}>

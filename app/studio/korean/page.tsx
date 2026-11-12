@@ -143,8 +143,8 @@ export default function KoreanPage() {
         guide={tool.guide}
         desc={
           lang === "ko"
-            ? "Cùng khám phá tiếng Hàn qua từ vựng, cách dùng và những câu hỏi nhỏ, theo nhịp của bạn."
-            : "Ôn từ vựng học thuật Academic Word List (AWL), tra cứu collocations và kiểm tra văn phong bài luận."
+            ? "Cùng thử tiếng Hàn, theo nhịp của bạn."
+            : "Cùng thử tiếng Anh, theo nhịp của bạn."
         }
       />
 
@@ -161,7 +161,7 @@ export default function KoreanPage() {
                 lang === "ko" ? "bg-white text-violet-700 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
               )}
             >
-              <span>🇰🇷</span> Tiếng Hàn (TOPIK)
+              <span>🇰🇷</span> Tiếng Hàn
             </button>
             <button
               type="button"
@@ -171,13 +171,11 @@ export default function KoreanPage() {
                 lang === "en" ? "bg-white text-violet-700 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
               )}
             >
-              <span>🇬🇧</span> Tiếng Anh (từ học thuật)
+              <span>🇬🇧</span> Tiếng Anh
             </button>
           </div>
         </div>
-        <div className="text-xs text-slate-500">
-          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Từ học thuật Academic Word List và cụm từ theo ngữ cảnh"}
-        </div>
+
       </div>
 
       <Tabs
@@ -325,7 +323,7 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
     { id: "type", label: "Gõ đáp án" },
   ]
 
-  if (!started) return <Card className="mx-auto max-w-2xl p-7 sm:p-10"><BookOpen className="h-8 w-8 text-violet-400"/><h2 className="mt-5 font-serif text-2xl text-slate-700">Một chút ngoại ngữ, khi bạn muốn.</h2><p className="mt-3 text-sm leading-7 text-slate-500">Mình có thể cùng bạn khám phá vài từ, nghe cách đọc hoặc thử một câu. Bạn có thể dừng bất cứ lúc nào; những thẻ đã lưu vẫn ở đây.</p><Button className="mt-6" onClick={()=>setStarted(true)}>Xem vài từ cùng mình</Button><p className="mt-4 text-xs leading-6 text-slate-400">Bạn cũng có thể mở Bộ thẻ hoặc Kiểm tra câu ở phía trên, nếu đó là điều bạn đang cần.</p></Card>
+  if (!started) return <Card className="mx-auto max-w-2xl p-7 sm:p-10"><BookOpen className="h-8 w-8 text-violet-400"/><h2 className="mt-5 font-semibold text-2xl text-slate-700">Một chút ngoại ngữ, khi bạn muốn.</h2><p className="mt-3 text-sm leading-7 text-slate-500">Mình có thể cùng bạn khám phá vài từ, nghe cách đọc hoặc thử một câu. Bạn có thể dừng bất cứ lúc nào; những thẻ đã lưu vẫn ở đây.</p><Button className="mt-6" onClick={()=>setStarted(true)}>Xem vài từ cùng mình</Button><p className="mt-4 text-xs leading-6 text-slate-400">Bạn cũng có thể mở Bộ thẻ hoặc Kiểm tra câu ở phía trên, nếu đó là điều bạn đang cần.</p></Card>
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
