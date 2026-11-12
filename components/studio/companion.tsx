@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { Flower2, X, Send, Settings2, Square, ArrowUpRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { callAi } from "@/lib/studio/ai"
 import { COMPANION_TOOLS, companionReply, scopeCompanionReply, type CompanionReply } from "@/lib/studio/companion"
@@ -11,7 +11,7 @@ import { sendToWriting } from "@/lib/studio/handoff"
 
 type Message={id:number;role:"user"|"assistant";text:string;proposal?:CompanionReply;created?:string;cancelled?:boolean}
 export function Companion(){
- const router=useRouter(),[open,setOpen]=useState(false),[mode,setMode]=useState<"chat"|"help">("chat"),[messages,setMessages]=useState<Message[]>([]),[text,setText]=useState(""),[busy,setBusy]=useState(false),[settings,setSettings]=useState(false),[tone,setTone]=useState("gentle"),[remember,setRemember]=useState(false),[loaded,setLoaded]=useState(false),[allowOnce,setAllowOnce]=useState(false)
+ const path=usePathname(),router=useRouter(),[open,setOpen]=useState(false),[mode,setMode]=useState<"chat"|"help">("chat"),[messages,setMessages]=useState<Message[]>([]),[text,setText]=useState(""),[busy,setBusy]=useState(false),[settings,setSettings]=useState(false),[tone,setTone]=useState("gentle"),[remember,setRemember]=useState(false),[loaded,setLoaded]=useState(false),[allowOnce,setAllowOnce]=useState(false)
  const abort=useRef<AbortController|null>(null),permission=useRef(false),panel=useRef<HTMLDivElement>(null),launcher=useRef<HTMLButtonElement>(null),input=useRef<HTMLTextAreaElement>(null),bottom=useRef<HTMLDivElement>(null),sequence=useRef(0)
  useEffect(()=>{const saved=readLS<{remember?:boolean;tone?:string}>("bloom.companion.settings",{});setRemember(!!saved.remember);setTone(saved.tone||"gentle");if(saved.remember)setMessages(readLS<Message[]>("bloom.companion.history",[]).slice(-30));setLoaded(true);return()=>abort.current?.abort()},[])
  useEffect(()=>{if(!loaded)return;writeLS("bloom.companion.settings",{remember,tone});if(remember)writeLS("bloom.companion.history",messages.slice(-30));else try{localStorage.removeItem("bloom.companion.history")}catch{}},[messages,remember,tone,loaded])
@@ -23,15 +23,18 @@ export function Companion(){
  const close=()=>{cancel();setOpen(false);launcher.current?.focus()}
  const create=(id:number,draft:{title:string;text:string})=>{
   const docId=sendToWriting(draft.title,{text:draft.text,kind:"other",lang:"vi"})
+  window.dispatchEvent(new CustomEvent("bloom:draft-created",{detail:{id:docId}}))
   setMessages(ms=>ms.map(m=>m.id===id?{...m,created:docId}:m));return docId
  }
  const undo=(message:Message)=>{
   const draft=message.proposal?.draft;if(!draft||!message.created)return
+  if(path==="/studio/writing"&&readLS("bloom.writing.active","")===message.created)return toast.info("Bản nháp đang mở ở chỗ viết; mình giữ lại để bảo vệ những chỉnh sửa của bạn.")
   const docs=readLS<{id:string;title:string;html:string}[]>("bloom.writing.docs",[]),doc=docs.find(d=>d.id===message.created)
   // Never delete work the user has edited after the assistant created it.
   const plainHtml=textToHtml(draft.text)
   if(doc&&doc.title===draft.title&&doc.html===plainHtml){if(!writeLS("bloom.writing.docs",docs.filter(d=>d.id!==doc.id)))return toast.error("Chưa lưu được thay đổi.");if(readLS("bloom.writing.active","")===doc.id)writeLS("bloom.writing.active",docs.find(d=>d.id!==doc.id)?.id||"")}
   else if(doc)return toast.info("Bản nháp đã có chỉnh sửa của bạn nên mình giữ lại. Bạn có thể xem nó ở chỗ viết.")
+  window.dispatchEvent(new CustomEvent("bloom:draft-removed",{detail:{id:message.created}}))
   setMessages(ms=>ms.map(m=>m.id===message.id?{...m,created:undefined,cancelled:true}:m))
  }
  const send=async()=>{
@@ -54,7 +57,7 @@ export function Companion(){
  {settings&&<div className="companion-settings"><label>Cách trả lời<select value={tone} onChange={e=>setTone(e.target.value)}><option value="gentle">Nhẹ nhàng, tự nhiên</option><option value="brief">Ngắn gọn</option><option value="direct">Đi thẳng vào việc</option></select></label><label><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/> Giữ cuộc trò chuyện trên thiết bị này</label><p>Mặc định chỉ giữ trong lần mở trang này. Mỗi lần gửi, lời nhắn và một phần hội thoại gần đây được chuyển đến dịch vụ AI. Mình không tự đọc các tài liệu bạn đã lưu.</p><button onClick={()=>{cancel();setMessages([])}}>Bắt đầu cuộc trò chuyện mới</button></div>}
  <div className="companion-modes" aria-label="Cách trợ lý giúp"><button aria-pressed={mode==="chat"} onClick={()=>{cancel();setMode("chat")}}>Chỉ trò chuyện</button><button aria-pressed={mode==="help"} onClick={()=>{cancel();setMode("help")}}>Nhờ làm một việc</button></div>
  {mode==="help"&&<div className="companion-permission"><p>Mình có thể soạn bản nháp mới hoặc gợi ý mở công cụ. Mặc định bạn xem rồi mới chọn làm.</p><label><input type="checkbox" checked={allowOnce} onChange={e=>{permission.current=e.target.checked;setAllowOnce(e.target.checked)}}/> Cho tạo bản nháp trong lượt gửi tiếp theo</label>{allowOnce&&<small>Bạn có thể bỏ chọn hoặc bấm Dừng để thu hồi. Quyền hết sau lượt này hoặc khi đóng trợ lý.</small>}</div>}
- <div className="companion-messages">{!messages.length&&<div className="companion-empty"><Flower2 size={35}/><h2>Bạn muốn kể điều gì?</h2><p>Mình có thể lắng nghe, cùng gỡ một ý còn rối, hoặc giúp bạn bắt đầu một việc nhỏ. Bạn chọn nhé.</p><small>Đây là trợ lý AI. Bạn có thể đóng lại bất cứ lúc nào.</small></div>}{messages.map(m=><div key={m.id} className={`companion-message ${m.role}`}><small>{m.role==="user"?"Bạn":"Bloom · AI"}</small><p>{m.text}</p>{m.proposal?.draft&&!m.cancelled&&<div className="companion-proposal"><strong>{m.proposal.draft.title}</strong><pre>{m.proposal.draft.text}</pre>{m.created?<><span>Đã tạo bản nháp riêng</span><button onClick={()=>{router.push('/studio/writing');close()}}>Mở bản nháp</button><button onClick={()=>undo(m)}>Hoàn tác tạo nháp</button></>:<button disabled={mode!=="help"} onClick={()=>{try{create(m.id,m.proposal!.draft!)}catch(e){toast.error((e as Error).message)}}}>Tạo bản nháp này</button>}</div>}{m.proposal?.tool&&<button className="companion-tool" disabled={mode!=="help"} onClick={()=>{router.push(COMPANION_TOOLS[m.proposal!.tool!].href);close()}}>{COMPANION_TOOLS[m.proposal.tool].label}<ArrowUpRight size={14}/></button>}</div>)}{busy&&<p role="status" className="companion-wait">Mình đang đọc lời nhắn của bạn…</p>}<div ref={bottom}/></div>
+ <div className="companion-messages">{!messages.length&&<div className="companion-empty"><Flower2 size={35}/><h2>Bạn muốn kể điều gì?</h2><p>Mình có thể lắng nghe, cùng gỡ một ý còn rối, hoặc giúp bạn bắt đầu một việc nhỏ. Bạn chọn nhé.</p><small>Đây là trợ lý AI. Bạn có thể đóng lại bất cứ lúc nào.</small></div>}{messages.map(m=><div key={m.id} className={`companion-message ${m.role}`}><small>{m.role==="user"?"Bạn":"Bloom · AI"}</small><p>{m.text}</p>{m.proposal?.draft&&!m.cancelled&&<div className="companion-proposal"><strong>{m.proposal.draft.title}</strong><pre>{m.proposal.draft.text}</pre>{m.created?<><span>Đã tạo bản nháp riêng</span><button onClick={()=>{window.dispatchEvent(new CustomEvent('bloom:draft-open',{detail:{id:m.created}}));router.push('/studio/writing');close()}}>Mở bản nháp</button><button onClick={()=>undo(m)}>Hoàn tác tạo nháp</button></>:<button disabled={mode!=="help"} onClick={()=>{try{create(m.id,m.proposal!.draft!)}catch(e){toast.error((e as Error).message)}}}>Tạo bản nháp này</button>}</div>}{m.proposal?.tool&&<button className="companion-tool" disabled={mode!=="help"} onClick={()=>{router.push(COMPANION_TOOLS[m.proposal!.tool!].href);close()}}>{COMPANION_TOOLS[m.proposal.tool].label}<ArrowUpRight size={14}/></button>}</div>)}{busy&&<p role="status" className="companion-wait">Mình đang đọc lời nhắn của bạn…</p>}<div ref={bottom}/></div>
  <form onSubmit={e=>{e.preventDefault();send()}}><label className="sr-only" htmlFor="companion-input">Lời nhắn cho Bloom</label><textarea id="companion-input" ref={input} maxLength={4000} rows={2} value={text} onChange={e=>setText(e.target.value)} placeholder="Bạn cứ viết theo cách của mình…"/><div><small>Chỉ nội dung trò chuyện được gửi khi bạn chọn Gửi.</small>{busy?<button type="button" onClick={cancel}><Square size={14}/>Dừng</button>:<button type="submit" disabled={!text.trim()}><Send size={15}/>Gửi</button>}</div></form>
  </div></>}</>
 }

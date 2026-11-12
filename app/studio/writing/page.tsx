@@ -39,7 +39,7 @@ import {
 import { AiNotice, AiResult, Badge, Button, Card, Empty, Input, Label, PageHeader, Select, Stat, Tabs, Textarea } from "@/components/studio/ui"
 import { TOOLS } from "@/lib/studio/tools"
 import { callAi, type GrammarIssue } from "@/lib/studio/ai"
-import { copyText, downloadFile, escapeHtml, formatTime, printHtml, safeFileName, uid, useStored, writeLS } from "@/lib/studio/storage"
+import { copyText, downloadFile, escapeHtml, formatTime, printHtml, safeFileName, uid, useStored, readLS, writeLS } from "@/lib/studio/storage"
 import { useRouter } from "next/navigation"
 import { htmlToMarkdown, replaceInElement, textStats, textToHtml } from "@/lib/studio/text"
 import { docxToHtml } from "@/lib/studio/docx"
@@ -237,6 +237,28 @@ export default function WritingPage() {
     if (saveState === "saving") saveNow()
     clearTimeout(saveTimer.current)
   }
+
+  useEffect(() => {
+    const added = (event: Event) => {
+      const id = (event as CustomEvent<{id:string}>).detail?.id
+      const incoming = readLS<Doc[]>("bloom.writing.docs", []).find(d => d.id === id)
+      if (incoming) setDocs(ds => ds.some(d => d.id === id) ? ds : [incoming, ...ds])
+    }
+    const removed = (event: Event) => {
+      const id = (event as CustomEvent<{id:string}>).detail?.id
+      if (id !== active?.id) setDocs(ds => ds.filter(d => d.id !== id))
+    }
+    const open = (event: Event) => {
+      flush()
+      added(event)
+      const id = (event as CustomEvent<{id:string}>).detail?.id
+      if (id && readLS<Doc[]>("bloom.writing.docs", []).some(d => d.id === id)) setActiveId(id)
+    }
+    window.addEventListener("bloom:draft-created", added)
+    window.addEventListener("bloom:draft-removed", removed)
+    window.addEventListener("bloom:draft-open", open)
+    return () => { window.removeEventListener("bloom:draft-created", added);window.removeEventListener("bloom:draft-removed", removed);window.removeEventListener("bloom:draft-open", open) }
+  }, [active?.id, saveState, saveNow, setDocs, setActiveId])
 
   const switchDoc = (id: string) => {
     flush()
