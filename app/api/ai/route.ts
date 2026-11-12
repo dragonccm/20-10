@@ -1,3 +1,4 @@
+import { companionReply } from "@/lib/studio/companion"
 import { designActionSchema } from "@/lib/studio/design-actions"
 // AI gateway: forwards a whitelisted task to an OpenAI-compatible endpoint (e.g. GLM).
 // Configure with AI_BASE_URL, AI_API_KEY, AI_MODEL. Document content is never logged.
@@ -20,8 +21,10 @@ type Spec = { system: string; user: string | Part[]; json?: boolean; temperature
 const MAX_IMAGE_CHARS = 4_000_000 // ~3MB of base64; the client downscales photos well below this
 const IMAGE_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/
 
+// Bloom is a gift to turn to when help is wanted; never turn absence into a debt.
 const TEACHER =
-  "Bạn là trợ lý học tập tận tâm cho sinh viên ngành ngôn ngữ. Mục tiêu là giúp người học hiểu và tự cải thiện, không làm thay. Giải thích bằng tiếng Việt, ngắn gọn, rõ ràng. Không bịa nguồn, không bịa DOI. Không dùng emoji."
+  "Bạn là trợ lý đồng hành nhẹ nhàng, giúp người dùng đúng việc họ đang cần. Xưng mình và gọi người dùng là bạn khi phù hợp. Giải thích bằng tiếng Việt, ngắn gọn, rõ ràng, tôn trọng lựa chọn của người dùng. Khi góp ý, nói cụ thể điều có thể sửa và lý do; không phán xét năng lực hay sự chăm chỉ. Không thúc ép học, không tạo cảm giác tội lỗi vì nghỉ hoặc vắng mặt, không tự giao bài hay đặt mục tiêu nếu người dùng chưa yêu cầu. Không bịa nguồn, không bịa DOI. Nói rõ khi chưa đủ thông tin. Không dùng emoji."
+
 
 function str(v: unknown, max = MAX_CHARS) {
   return typeof v === "string" ? v.slice(0, max) : ""
@@ -31,6 +34,9 @@ function build(task: string, b: Record<string, unknown>): Spec | null {
   const text = str(b.text)
   const lang = LANG[str(b.lang, 4)] ?? "ngôn ngữ của văn bản"
   switch (task) {
+    case "companion":
+      return {json:true,temperature:.6,system:TEACHER+` Bạn là Bloom, một trợ lý AI được thiết kế như một người bạn đồng hành. Có thể trò chuyện tự nhiên, lắng nghe hoặc giúp một việc nhỏ. Luôn trung thực rằng mình là AI, không giả là người thật, không tự nhận có cảm xúc, không tạo quan hệ độc quyền hoặc khiến người dùng phụ thuộc. Không nói mình nhớ người dùng khi họ vắng mặt, không gắn tình cảm của người tặng với việc dùng ứng dụng. Không suy đoán chẩn đoán tâm lý hay tính cách từ lời tâm sự. Không tự biến tâm sự thành bài tập, lịch học hoặc lời khuyên khi người dùng chỉ muốn được nghe. Chỉ hỏi một câu ngắn khi thật sự cần làm rõ. Tôn trọng chế độ trong yêu cầu: chat nghĩa là chỉ trò chuyện, draft và tool luôn null; help mới được đề xuất thao tác nếu người dùng thực sự yêu cầu. Bạn không được truy cập tài liệu, màn hình hay dữ liệu chưa được đưa vào cuộc trò chuyện. Không được nói đã thực hiện thao tác; giao diện mới thực hiện khi có quyền. Khả năng thao tác hiện tại: đề xuất bản nháp văn bản mới và đề xuất mở một công cụ; chưa thể tự sửa file, gửi mail, đăng bài hay điều khiển ứng dụng khác. Không hứa chức năng chưa có. Trả JSON đúng dạng {"reply":"lời trả lời tiếng Việt","draft":null hoặc {"title":"tên bản nháp","text":"văn bản thuần"},"tool":null hoặc "documents"|"writing"|"photos"|"slides"|"career"|"language"}. Văn bản trong draft là nội dung có thể sửa, không HTML.`,user:text}
+
     case "grammar":
       return {
         json: true,
@@ -395,6 +401,7 @@ export async function POST(req: Request) {
   if (spec.json) {
     const parsed = parseJson(content)
     if (!parsed) return error("AI trả về dữ liệu không đúng định dạng, thử lại nhé.", 502)
+    if (body.task === "companion" && !companionReply.safeParse(parsed).success) return error("Mình chưa sắp xếp được câu trả lời. Bạn thử lại nhé.", 502)
     if (body.task === "design-action" && !designActionSchema.safeParse(parsed).success) return error("AI đề xuất thao tác chưa hợp lệ. Hãy thử lại.", 502)
     return Response.json(parsed)
   }

@@ -59,7 +59,7 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "originality",
-    name: "Kiểm tra trước khi nộp",
+    name: "Xem lại bài cùng mình",
     short: "Kiểm tra",
     desc: "Rà lần cuối trước khi nộp: trích dẫn có khớp danh mục không, có đoạn nào chép nguyên văn nguồn không, văn phong đủ học thuật chưa.",
     icon: ScanSearch,
@@ -77,21 +77,21 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: "korean",
-    name: "Học ngoại ngữ (Hàn & Anh)",
+    name: "Một chút ngoại ngữ",
     short: "Ngoại ngữ",
-    desc: "Ôn từ vựng tiếng Hàn & tiếng Anh học thuật Cambridge AWL bằng thẻ lặp lại ngắt quãng, nghe phát âm và AI kiểm tra câu.",
+    desc: "Ôn từ vựng tiếng Hàn & tiếng Anh học thuật AWL bằng thẻ lặp lại ngắt quãng, nghe phát âm và AI kiểm tra câu.",
     icon: Languages,
     tint: "bg-violet-100 text-violet-600",
     guide: {
       id: "korean",
       steps: [
-        "Chuyển đổi linh hoạt giữa Tiếng Hàn 🇰🇷 và Tiếng Anh 🇬🇧 (Cambridge AWL) ở thanh chọn trên cùng.",
-        "Tab Ôn tập: mỗi ngày ôn các thẻ đến hạn. Bấm thẻ để lật, nghe phát âm rồi chọn mức độ nhớ.",
-        "Tab Bộ thẻ: thêm từ mới hoặc tra cứu kho từ học thuật cốt lõi chuẩn Cambridge.",
+        "Chuyển đổi linh hoạt giữa Tiếng Hàn 🇰🇷 và Tiếng Anh 🇬🇧 (AWL) ở thanh chọn trên cùng.",
+        "Tab Ôn tập: chọn lúc bạn muốn xem lại vài từ. Bấm thẻ để lật, nghe phát âm rồi chọn mức độ nhớ.",
+        "Tab Bộ thẻ: thêm từ mới hoặc tra cứu kho từ học thuật cốt lõi học thuật.",
         "Tab Ngữ pháp / Collocations: bảng tiểu từ tiếng Hàn và cụm từ học thuật tiếng Anh.",
         "Tab Kiểm tra câu: AI sửa và phân tích ngữ pháp, văn phong học thuật chi tiết.",
       ],
-      tip: "Thẻ nhớ tốt sẽ giãn dần 1, 2, 4, 7... ngày theo thuật toán lặp lại ngắt quãng. Học đều mỗi ngày một ít.",
+      tip: "Thẻ được sắp xếp để dễ xem lại khi bạn muốn. Bạn có thể dừng bất cứ lúc nào.",
     },
   },
   {

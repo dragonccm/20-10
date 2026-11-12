@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 
 export type AiTask =
+  | "companion"
   | "grammar"
   | "structure"
   | "outline"

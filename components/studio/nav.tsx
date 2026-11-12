@@ -22,7 +22,7 @@ export function StudioNav() {
           </span>
           <span className="hidden leading-tight xl:block">
             <span className="block font-semibold text-slate-800">Bloom</span>
-            <span className="block text-xs text-slate-500">Workspace</span>
+            <span className="block text-xs text-slate-500">Một góc nhỏ của bạn</span>
           </span>
         </Link>
         <nav className="flex flex-1 flex-col gap-1">

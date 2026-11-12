@@ -133,3 +133,12 @@ test('interior slide pages vary across decks and keep text inside the slide', ()
   assert.equal(new Set(structures).size,20,'repeated layout on interior page '+page)
  }
 })
+test('companion chat mode cannot propose actions; help mode stays within supported tools', () => {
+ const {companionReply,scopeCompanionReply}=require('../lib/studio/companion.ts')
+ const result=companionReply.parse({reply:'Mình có thể soạn một bản nháp.',draft:{title:'Ghi chú',text:'Nội dung'},tool:'writing'})
+ assert.deepEqual(scopeCompanionReply(result,'chat'),{reply:result.reply,draft:null,tool:null})
+ assert.equal(scopeCompanionReply(result,'help').draft.title,'Ghi chú')
+ assert.equal(companionReply.safeParse({...result,tool:'https://example.com'}).success,false)
+ assert.equal(companionReply.safeParse({...result,execute:'delete-all'}).success,false)
+ assert.equal(companionReply.safeParse({...result,draft:{title:'',text:'abc'}}).success,false)
+})

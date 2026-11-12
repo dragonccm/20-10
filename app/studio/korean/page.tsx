@@ -142,8 +142,8 @@ export default function KoreanPage() {
         guide={tool.guide}
         desc={
           lang === "ko"
-            ? "Học từ vựng tiếng Hàn mỗi ngày bằng lặp lại ngắt quãng, nắm chắc tiểu từ và tự kiểm tra câu."
-            : "Ôn từ vựng học thuật Cambridge Academic Word List (AWL), tra cứu collocations và kiểm tra văn phong bài luận."
+            ? "Cùng khám phá tiếng Hàn qua từ vựng, cách dùng và những câu hỏi nhỏ, theo nhịp của bạn."
+            : "Ôn từ vựng học thuật Academic Word List (AWL), tra cứu collocations và kiểm tra văn phong bài luận."
         }
       />
 
@@ -170,12 +170,12 @@ export default function KoreanPage() {
                 lang === "en" ? "bg-white text-violet-700 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
               )}
             >
-              <span>🇬🇧</span> Tiếng Anh (Cambridge AWL)
+              <span>🇬🇧</span> Tiếng Anh (từ học thuật)
             </button>
           </div>
         </div>
         <div className="text-xs text-slate-500">
-          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Kho từ học thuật Cambridge Academic Word List & Collocations C1"}
+          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Kho từ học thuật Academic Word List & Collocations C1"}
         </div>
       </div>
 
@@ -214,6 +214,7 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
   const [typed, setTyped] = useState("")
   const [checked, setChecked] = useState<null | boolean>(null)
   const [session, setSession] = useState({ right: 0, wrong: 0 })
+  const [started, setStarted] = useState(false)
 
   const normalizeWord = (s: string) => (lang === "ko" ? normalizeKo(s) : s.trim().toLowerCase())
 
@@ -296,7 +297,8 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest("input,textarea,select")) return
+      if (!started) return
+      if ((e.target as HTMLElement)?.closest("input,textarea,select,button,a,summary")) return
       if (mode === "flip") {
         if (e.code === "Space") {
           e.preventDefault()
@@ -320,9 +322,12 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
     { id: "type", label: "Gõ đáp án" },
   ]
 
+  if (!started) return <Card className="mx-auto max-w-2xl p-7 sm:p-10"><BookOpen className="h-8 w-8 text-violet-400"/><h2 className="mt-5 font-serif text-2xl text-slate-700">Một chút ngoại ngữ, khi bạn muốn.</h2><p className="mt-3 text-sm leading-7 text-slate-500">Mình có thể cùng bạn khám phá vài từ, nghe cách đọc hoặc thử một câu. Bạn có thể dừng bất cứ lúc nào; những thẻ đã lưu vẫn ở đây.</p><Button className="mt-6" onClick={()=>setStarted(true)}>Xem vài từ cùng mình</Button><p className="mt-4 text-xs leading-6 text-slate-400">Bạn cũng có thể mở Bộ thẻ hoặc Kiểm tra câu ở phía trên, nếu đó là điều bạn đang cần.</p></Card>
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
       <div className="min-w-0">
+        <button className="mb-4 text-sm text-violet-600 underline underline-offset-4" onClick={()=>{setStarted(false);resetCard()}}>Để lúc khác</button>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {MODES.map((m) => (
             <button
@@ -338,7 +343,7 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
 
         {!current ? (
           <Card>
-            <Empty icon={RotateCcw} title="Hôm nay đã ôn xong rồi" desc="Các thẻ sẽ quay lại đúng lúc bạn sắp quên. Muốn học thêm thì ôn trước vài thẻ nhé.">
+            <Empty icon={RotateCcw} title="Mình có thể nghỉ ở đây một chút" desc="Những thẻ bạn vừa xem đã được lưu. Nếu vẫn muốn khám phá thêm, bạn có thể tự chọn ở bên dưới.">
               {cards.length > 0 && (
                 <Button
                   variant="soft"
@@ -351,7 +356,7 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
                     )
                   }
                 >
-                  Ôn trước 10 thẻ
+                  Xem thêm vài thẻ
                 </Button>
               )}
             </Empty>
@@ -503,15 +508,16 @@ function Review({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards
           </Card>
         )}
       </div>
-      <Card className="h-fit p-4">
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-          <Stat label="Cần ôn hôm nay" value={due.length} />
+      <details className="h-fit rounded-2xl bg-white/70 p-4">
+        <summary className="cursor-pointer text-sm text-slate-500">Xem ghi chú buổi học</summary>
+        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-1">
+          <Stat label="Thẻ gợi ý để xem lại" value={due.length} />
           <Stat label="Tổng số thẻ" value={cards.length} />
-          <Stat label="Đã thuộc (từ hộp 3)" value={learned} />
-          <Stat label="Phiên này: đúng / sai" value={`${session.right} / ${session.wrong}`} />
+          <Stat label="Thẻ đã quen hơn" value={learned} />
+          <Stat label="Lượt nhớ / thử lại" value={`${session.right} / ${session.wrong}`} />
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-slate-500">Thẻ nhớ tốt sẽ giãn dần: 1, 2, 4, 7, 15, 30, 60 ngày. Trả lời sai thì thẻ quay về đầu.</p>
-      </Card>
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">Mức độ bạn chọn giúp sắp xếp thẻ cho lần sau. Đây là gợi ý khi bạn muốn học tiếp, không phải lịch hẹn cần hoàn thành.</p>
+      </details>
     </div>
   )
 }
@@ -725,10 +731,10 @@ function Deck({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: 
       makeCard(w.word, `${w.vi} (${w.pos}) · ${w.ipa}`, w.example)
     )
     if (!toAdd.length) {
-      toast.info("Đã có đủ tất cả từ vựng trong danh mục Cambridge AWL!")
+      toast.info("Đã có đủ tất cả từ vựng trong danh mục từ học thuật!")
     } else {
       setCards((cs) => [...toAdd, ...cs])
-      toast.success(`Đã nạp thêm ${toAdd.length} từ vựng học thuật Cambridge AWL!`)
+      toast.success(`Đã nạp thêm ${toAdd.length} từ vựng học thuật từ học thuật!`)
     }
   }
 
@@ -749,7 +755,7 @@ function Deck({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {lang === "en" && (
             <Button size="sm" variant="soft" onClick={loadCambridgePack} className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-              📚 Nạp thêm từ vựng Cambridge AWL
+              📚 Nạp thêm từ vựng từ học thuật
             </Button>
           )}
           <Button size="sm" variant={showBulk ? "soft" : "outline"} icon={Upload} onClick={() => setShowBulk((v) => !v)}>
@@ -878,7 +884,7 @@ function EnglishGrammar() {
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="h-5 w-5 text-blue-600" />
           <div>
-            <h3 className="font-semibold text-slate-800">Cụm từ liên kết học thuật Cambridge</h3>
+            <h3 className="font-semibold text-slate-800">Cụm từ liên kết học thuật</h3>
             <p className="text-xs text-slate-500">Các mẫu câu dẫn chuẩn mực cho bài luận C1 & IELTS Academic</p>
           </div>
         </div>
@@ -1019,7 +1025,7 @@ function SentenceCheck({ lang = "ko" }: { lang?: "ko" | "en" }) {
       />
       <div className="mt-3 flex flex-wrap gap-2">
         <Button icon={Sparkles} loading={busy} onClick={run}>
-          {lang === "ko" ? "Kiểm tra và giải thích" : "Kiểm tra chuẩn học thuật Cambridge"}
+          {lang === "ko" ? "Kiểm tra và giải thích" : "Kiểm tra cách diễn đạt học thuật"}
         </Button>
         <Button variant="outline" icon={Volume2} onClick={() => text.trim() && speak(text, lang)}>
           Nghe đọc
