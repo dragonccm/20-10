@@ -14,7 +14,7 @@
     "simple_citation_evidence_workflow": "implemented_and_verified",
     "file_conversion_rename": "implemented_and_verified",
     "image_selection_object_removal": "implemented_and_verified",
-    "integration_tests_and_deployment": "local_checks_passed_awaiting_deployment"
+    "integration_tests_and_deployment": "implemented_and_verified"
   },
   "deferred_by_user": [
     "Rust/native iOS application"
@@ -55,6 +55,13 @@
       "https://github.com/101arrowz/fflate/blob/master/docs/functions/zipSync.md"
     ],
     "production_build": "passed: Next.js build, typecheck and 23 regression tests",
-    "performance": "Helpers initial JS reduced from 314 kB to 133 kB by loading PDF/ZIP/image tools on demand. Homepage initial JS 115 kB. Model download is opt-in."
+    "performance": "Helpers initial JS reduced from 314 kB to 133 kB by loading PDF/ZIP/image tools on demand. Homepage initial JS 115 kB. Model download is opt-in.",
+    "production": {
+      "application_commit": "715f1df331fdeb545b9cf441e8a623b651860753",
+      "dokploy_deployment": "LIkfqw2F-yEgkTKEwQ2Ss",
+      "status": "done",
+      "url": "https://20-10-for-thuy-ngan.logthinks.com/studio",
+      "observed": "Opened new Helpers and Documents interfaces on the real domain. Generated a Vietnamese email draft and completed exact-quote document analysis against the production AI gateway. Mobile production layout checked at 390px without horizontal page overflow."
+    }
   }
 }
