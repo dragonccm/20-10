@@ -237,7 +237,7 @@ export function CitationCompanion({
   }
   const stale = snapshot && essay !== snapshot
   return (
-    <Card className="space-y-4 p-4">
+    <Card className="citation-companion space-y-4 p-5">
       <h3 className="font-medium">Cùng xem bài và nguồn</h3>
       <p className="text-xs leading-relaxed text-slate-500">
         Đọc bài, tìm nguồn rồi đối chiếu bằng chứng.
@@ -249,6 +249,20 @@ export function CitationCompanion({
           khi bạn chọn bắt đầu; từ khóa tìm được gửi tới Crossref.
         </p>
       </HelpDetails>
+      <div className="citation-style-control">
+        <Label>Kiểu trích dẫn</Label>{" "}
+        <Select
+          aria-label="Kiểu trích dẫn"
+          value={style}
+          onValueChange={(value) => setStyle(value as Style)}
+        >
+          {Object.entries(STYLE_LABEL).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
       <Button
         loading={busy === "read"}
         disabled={!!busy || !essay.trim()}
@@ -273,20 +287,10 @@ export function CitationCompanion({
           để tránh gắn nhầm ý.
         </p>
       )}
-      <Select
-        aria-label="Kiểu trích dẫn"
-        value={style}
-        onChange={(e) => setStyle(e.target.value as Style)}
-      >
-        {Object.entries(STYLE_LABEL).map(([id, label]) => (
-          <option key={id} value={id}>
-            {label}
-          </option>
-        ))}
-      </Select>
+
       <details className="rounded-xl border border-violet-100 p-3">
         <summary className="cursor-pointer text-xs text-violet-600">
-          Mình đã có nguồn: tải tệp hoặc dán đoạn để kiểm tra
+          Mình đã có nguồn
         </summary>
         <input
           className="mt-3 max-w-full text-xs"

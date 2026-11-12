@@ -37,6 +37,7 @@ type Props = {
 export function DocumentWorkbench({ doc, update }: Props) {
   const router = useRouter(),
     [state, setState] = useState<Knowledge | null>(null),
+    [editingSource, setEditingSource] = useState(false),
     [busy, setBusy] = useState(""),
     [progress, setProgress] = useState(""),
     [page, setPage] = useState(1),
@@ -85,6 +86,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
     setPage((p) => Math.max(1, Math.min(p, pages.length)))
   }, [pages.length])
   useEffect(() => {
+    setEditingSource(false)
     setPageText(pages[page - 1] || "")
     setImage("")
     let active = true
@@ -274,8 +276,8 @@ export function DocumentWorkbench({ doc, update }: Props) {
   )
   const notes = view === "brief" ? state?.brief || [] : allNotes
   return (
-    <div className="space-y-4">
-      <Card className="p-4">
+    <div className="document-workbench space-y-4">
+      <Card className="document-analysis p-4">
         <p className="text-sm leading-7 text-slate-600">
           Đọc được chữ ở{" "}
           <b>
@@ -368,7 +370,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
           </div>
         )}
       </Card>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="doc-reading-grid">
         <section className="space-y-4">
           <Card className="p-4">
             <h3 className="mb-3 font-medium">Hỏi về tài liệu</h3>
@@ -453,8 +455,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
                   </>
                 ) : (
                   <p className="text-sm leading-7 text-slate-500">
-                    Chọn “Lấy ý chính” khi bạn muốn bắt đầu. Bản tối lược sẽ gom
-                    ý từ các phần đã đọc, không bỏ phần cuối để vừa một lượt AI.
+                    Chọn “Lấy ý chính” để bắt đầu ghi chú từ tài liệu.
                   </p>
                 )}
               </>
@@ -475,7 +476,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
         <section id="bloom-source-panel" className="space-y-4 scroll-mt-4">
           <Card className="p-4">
             <div className="mb-3 flex items-end gap-3">
-              <label className="w-28">
+              <label className="w-20">
                 <Label>{marker}</Label>
                 <Input
                   aria-label="Vị trí nguồn"
@@ -494,7 +495,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
                 />
               </label>
               <span className="pb-3 text-xs text-slate-500">
-                /{pages.length} · Đối chiếu và sửa chữ đã nhận diện
+                /{pages.length} · Bản gốc
               </span>
             </div>
             {image && (
@@ -504,24 +505,54 @@ export function DocumentWorkbench({ doc, update }: Props) {
                 className="mb-4 max-h-[500px] w-full rounded-xl object-contain"
               />
             )}
-            <Textarea
-              aria-label="Chữ ở vị trí nguồn"
-              rows={14}
-              value={pageText}
-              onChange={(e) => setPageText(e.target.value)}
-            />
-            <Button
-              className="mt-3"
-              variant="outline"
-              disabled={!!busy || pageText === (pages[page - 1] || "")}
-              onClick={() => savePage(page, pageText)}
-            >
-              Lưu phần chữ đã sửa
-            </Button>
-            <p className="mt-2 text-xs leading-6 text-slate-500">
-              Sửa chữ sẽ tạo phiên bản ghi chú mới; ghi chú cũ không được dùng
-              lại cho nguồn đã thay đổi.
-            </p>
+            {editingSource ? (
+              <>
+                <Textarea
+                  aria-label="Chữ ở vị trí nguồn"
+                  rows={14}
+                  value={pageText}
+                  onChange={(e) => setPageText(e.target.value)}
+                />
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    disabled={!!busy || pageText === (pages[page - 1] || "")}
+                    onClick={() => savePage(page, pageText)}
+                  >
+                    Lưu chữ đã sửa
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setPageText(pages[page - 1] || "")
+                      setEditingSource(false)
+                    }}
+                  >
+                    Đóng
+                  </Button>
+                </div>
+                <p className="studio-caption mt-2">
+                  Sửa chữ sẽ tạo phiên bản ghi chú mới.
+                </p>
+              </>
+            ) : (
+              <>
+                <div
+                  className="document-source-text"
+                  aria-label="Nội dung nguồn"
+                >
+                  {pageText || "Phần này chưa có chữ."}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setEditingSource(true)}
+                >
+                  Sửa chữ nhận diện
+                </Button>
+              </>
+            )}
           </Card>
           {doc.fileKind === "pdf" && (
             <Card className="p-4">

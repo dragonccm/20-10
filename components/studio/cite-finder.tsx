@@ -379,7 +379,7 @@ export function CiteFinder({
         <p className="text-xs leading-relaxed text-slate-500">Làm khi đã trích dẫn xong cả bài. Web tự tạo mục References liệt kê đủ các nguồn đã chèn, đúng kiểu bạn chọn.</p>
         <div className="mt-2 flex items-center gap-2">
           <span className="shrink-0 text-xs text-slate-500">Kiểu</span>
-          <Select value={style} onChange={(e) => setStyle(e.target.value as Style)} className="h-8 flex-1 text-xs" aria-label="Kiểu trích dẫn">
+          <Select value={style} onValueChange={(value) => setStyle(value as Style)} className="h-8 flex-1 text-xs" aria-label="Kiểu trích dẫn">
             {Object.entries(STYLE_LABEL).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}

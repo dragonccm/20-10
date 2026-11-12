@@ -450,7 +450,7 @@ export default function WritingPage() {
             <Card className="p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-slate-500">Bài đang mở</span>
-                <Select value={active.id} onChange={(e) => switchDoc(e.target.value)} className="w-auto max-w-full min-w-0 flex-1 sm:max-w-xs" aria-label="Bài đang mở">
+                <Select value={active.id} onValueChange={(value) => switchDoc(value)} className="w-auto max-w-full min-w-0 flex-1 sm:max-w-xs" aria-label="Bài đang mở">
                   {docs.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.title}
@@ -478,14 +478,14 @@ export default function WritingPage() {
               />
 
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-                <Select value={active.kind} onChange={(e) => updateDoc(active.id, (d) => ({ ...d, kind: e.target.value as Doc["kind"] }))}>
+                <Select value={active.kind} onValueChange={(value) => updateDoc(active.id, (d) => ({ ...d, kind: value as Doc["kind"] }))}>
                   {Object.entries(KIND_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>
                       {v}
                     </option>
                   ))}
                 </Select>
-                <Select value={active.lang} onChange={(e) => updateDoc(active.id, (d) => ({ ...d, lang: e.target.value as Lang }))}>
+                <Select value={active.lang} onValueChange={(value) => updateDoc(active.id, (d) => ({ ...d, lang: value as Lang }))}>
                   {Object.entries(LANG_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>
                       {v}
@@ -683,7 +683,7 @@ export default function WritingPage() {
                       onClick={() => runTool("translate")}
                       className="flex-1"
                     />
-                    <Select value={target} onChange={(e) => setTarget(e.target.value as Lang)} className="w-28">
+                    <Select value={target} onValueChange={(value) => setTarget(value as Lang)} className="w-28">
                       <option value="vi">Việt</option>
                       <option value="en">Anh</option>
                       <option value="ko">Hàn</option>

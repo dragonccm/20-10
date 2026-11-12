@@ -307,9 +307,7 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
                     <Select
                       aria-label={`Câu gợi ý ${i + 1}`}
                       value={answers[i] ?? ""}
-                      onChange={(e) =>
-                        setAnswers((a) => ({ ...a, [i]: e.target.value }))
-                      }
+                      onValueChange={(value) => setAnswers((a) => ({ ...a, [i]: value }))}
                     >
                       <option value="">Chọn khi bạn muốn</option>
                       {q.options.map((o, j) => (
@@ -367,7 +365,7 @@ export function LearningCenter({ lang }: { lang: "en" | "ko" }) {
                 <Label>Kỹ năng</Label>
                 <Select
                   value={skill}
-                  onChange={(e) => setSkill(e.target.value)}
+                  onValueChange={(value) => setSkill(value)}
                 >
                   {[
                     ["speaking", "Hội thoại"],

@@ -133,7 +133,7 @@ function EmailComposer() {
         <h2 className="font-medium">Bạn muốn nói điều gì?</h2>
         <label className="block">
           <Label>Mục đích</Label>
-          <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+          <Select value={purpose} onValueChange={(value) => setPurpose(value)}>
             {EMAILS.map((x) => (
               <option key={x}>{x}</option>
             ))}
@@ -158,7 +158,7 @@ function EmailComposer() {
         </label>
         <label className="block">
           <Label>Giọng điệu</Label>
-          <Select value={tone} onChange={(e) => setTone(e.target.value)}>
+          <Select value={tone} onValueChange={(value) => setTone(value)}>
             {[
               "Lịch sự, tự nhiên",
               "Trang trọng",
@@ -173,7 +173,7 @@ function EmailComposer() {
         <Select
           aria-label="Ngôn ngữ email"
           value={lang}
-          onChange={(e) => setLang(e.target.value)}
+          onValueChange={(value) => setLang(value)}
         >
           <option value="vi">Tiếng Việt</option>
           <option value="en">Tiếng Anh</option>
@@ -423,8 +423,8 @@ function FileHelpers() {
       <Select
         aria-label="Thao tác với file"
         value={task}
-        onChange={(e) => {
-          setTask(e.target.value)
+        onValueChange={(value) => {
+          setTask(value)
           setFiles([])
         }}
       >
@@ -483,7 +483,7 @@ function FileHelpers() {
               <Label>Xoay thêm</Label>
               <Select
                 value={rotation}
-                onChange={(e) => setRotation(e.target.value)}
+                onValueChange={(value) => setRotation(value)}
               >
                 {["0", "90", "180", "270"].map((x) => (
                   <option key={x} value={x}>
@@ -496,7 +496,7 @@ function FileHelpers() {
         </div>
       )}
       {task === "image" && (
-        <Select value={type} onChange={(e) => setType(e.target.value)}>
+        <Select value={type} onValueChange={(value) => setType(value)}>
           <option value="image/jpeg">JPG · nền trắng khi ảnh trong suốt</option>
           <option value="image/png">PNG · giữ nền trong suốt</option>
           <option value="image/webp">WebP</option>
@@ -781,11 +781,11 @@ function WordTemplates() {
                         <Select
                           aria-label={`Dữ liệu thay đoạn ${p.index}`}
                           value=""
-                          onChange={(e) => {
-                            if (e.target.value)
+                          onValueChange={(value) => {
+                            if (value)
                               setReplacements((prev) => ({
                                 ...prev,
-                                [p.index]: sourceValues[e.target.value],
+                                [p.index]: sourceValues[value],
                               }))
                           }}
                         >

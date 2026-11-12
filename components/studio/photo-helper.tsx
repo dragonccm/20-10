@@ -1,7 +1,18 @@
 "use client"
 import { useEffect, useRef, useState, type PointerEvent } from "react"
+import {
+  ImagePlus,
+  Upload,
+  Download,
+  Undo2,
+  MousePointer2,
+  Paintbrush,
+  Eraser,
+  Crop,
+  Sparkles,
+} from "lucide-react"
 import { toast } from "sonner"
-import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
+import { HelpDetails, Button, Card, Textarea } from "./ui"
 import { fileToDataUrl, loadImg } from "@/lib/studio/image"
 import {
   colorRegion,
@@ -16,6 +27,8 @@ import { blank } from "@/lib/studio/design"
 import { uid } from "@/lib/studio/storage"
 
 export function PhotoHelper() {
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [fileName, setFileName] = useState("")
   const [src, setSrc] = useState(""),
     [mode, setMode] = useState("wand"),
     [tolerance, setTolerance] = useState(25),
@@ -279,235 +292,365 @@ export function PhotoHelper() {
     }
     window.location.assign("/studio/creative")
   }
+  const pickFile = async (file: File) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type))
+      return toast.info("Chọn ảnh PNG, JPG hoặc WebP nhé.")
+    if (file.size > 40 * 1024 * 1024)
+      return toast.info("Chọn ảnh dưới 40 MB để xử lý mượt hơn.")
+    try {
+      const img = await fileToDataUrl(file, 1600, 0.96, true, true)
+      setSrc(img.src)
+      setFileName(file.name)
+      setPast([])
+      setAdvice(null)
+    } catch {
+      toast.error("Chưa mở được ảnh này.")
+    }
+  }
+  const undo = () => {
+    const prev = past.at(-1)
+    if (prev) {
+      setPast((p) => p.slice(0, -1))
+      setSrc(prev)
+      setAdvice(null)
+    }
+  }
+  const download = () =>
+    base.current?.toBlob((blob) => {
+      if (blob) downloadFile("anh-da-sua.png", blob, "image/png")
+    }, "image/png")
   return (
-    <div className="space-y-4">
-      <Card className="space-y-4 p-5">
-        <h2 className="font-semibold text-2xl">Sửa một vùng nhỏ trong ảnh</h2>
-        <p className="text-sm text-slate-500">
-          Bấm hoặc tô vùng cần sửa, rồi xem trước.
-        </p>
-        <HelpDetails summary="Cách chọn vùng ảnh">
-          <p>
-            Chọn vùng màu gần nhau hoặc dùng nét tô. Bạn có thể hoàn tác và tải
-            một bản mới. Công cụ tối ưu ảnh ở cạnh dài tối đa 1600px.
-          </p>
-        </HelpDetails>
-        <input
-          aria-label="Chọn ảnh để chỉnh vùng"
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          disabled={!!busy}
-          onChange={async (e) => {
-            const f = e.target.files?.[0]
-            e.target.value = ""
-            if (!f) return
-            try {
-              const img = await fileToDataUrl(f, 1600, 0.96, true, true)
-              setSrc(img.src)
-              setPast([])
-              setAdvice(null)
-            } catch {
-              toast.error("Chưa mở được ảnh này.")
-            }
+    <section className="photo-workspace" aria-label="Chỉnh ảnh">
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        aria-label="Chọn ảnh để chỉnh vùng"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ""
+          if (file) pickFile(file)
+        }}
+      />
+      {!src ? (
+        <Card
+          className="photo-upload"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            const file = e.dataTransfer.files[0]
+            if (file) pickFile(file)
           }}
-        />
-        {src && (
-          <>
-            <div className="flex flex-wrap items-end gap-3">
-              <label>
-                <Label>Chọn bằng</Label>
-                <Select value={mode} onChange={(e) => setMode(e.target.value)}>
-                  <option value="wand">Bấm vùng màu gần nhau</option>
-                  <option value="brush">Tô vùng muốn sửa</option>
-                  <option value="unbrush">Bớt vùng đã tô</option>
-                </Select>
-              </label>
-              <label>
-                <Label>
-                  {mode === "wand" ? "Độ rộng màu được chọn" : "Cỡ nét tô"}
-                </Label>
-                <input
-                  aria-label="Độ rộng chọn vùng"
-                  type="range"
-                  min={mode === "wand" ? 0 : 3}
-                  max={mode === "wand" ? 120 : 100}
-                  value={mode === "wand" ? tolerance : radius}
-                  onChange={(e) =>
-                    mode === "wand"
-                      ? setTolerance(Number(e.target.value))
-                      : setRadius(Number(e.target.value))
-                  }
-                />
-              </label>
-              <label className="flex gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={add}
-                  onChange={(e) => setAdd(e.target.checked)}
-                />
-                Thêm vào vùng hiện có
-              </label>
-              <Button variant="ghost" onClick={clear}>
-                Bỏ vùng chọn
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!past.length || !!busy}
-                onClick={() => {
-                  const prev = past.at(-1)!
-                  setPast((p) => p.slice(0, -1))
-                  setSrc(prev)
-                  setAdvice(null)
-                }}
-              >
-                Hoàn tác
-              </Button>
-            </div>
-            <div className="relative mx-auto w-fit max-w-full overflow-hidden rounded-xl border bg-[repeating-conic-gradient(#eee_0%_25%,white_0%_50%)] bg-[length:18px_18px]">
-              <canvas
-                ref={base}
-                style={{
-                  display: "block",
-                  maxWidth: "100%",
-                  maxHeight: 650,
-                  width: "auto",
-                  height: "auto",
-                }}
-              />
-              <canvas
-                ref={overlay}
-                aria-label="Vùng chọn trên ảnh"
-                className="absolute inset-0 h-full w-full touch-none"
-                onPointerDown={down}
-                onPointerMove={(e) => {
-                  if (drawing.current) paint(point(e))
-                }}
-                onPointerUp={() => {
-                  drawing.current = false
-                  last.current = null
-                  count()
-                }}
-                onPointerCancel={() => {
-                  drawing.current = false
-                  last.current = null
-                  count()
-                }}
-              />
-            </div>
-            <p className="text-xs text-slate-500">
-              {dimensions.w} × {dimensions.h}px ·{" "}
-              {selected ? "Có vùng đã chọn" : "Chưa chọn vùng"} · Màu hồng là
-              vùng sẽ được sửa.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={!!busy || !selected}
-                onClick={() => apply("clear")}
-              >
-                Xóa vùng thành trong suốt
-              </Button>
-              <input
-                aria-label="Màu mới cho vùng chọn"
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-              />
-              <Button
-                disabled={!!busy || !selected}
-                variant="outline"
-                onClick={() => apply("color")}
-              >
-                Đổi màu vùng chọn
-              </Button>
-              <Button
-                disabled={!!busy || !selected}
-                variant="outline"
-                onClick={() => apply("erase")}
-              >
-                Xóa vật thể bằng nền lân cận
-              </Button>
-            </div>
-            <p className="text-xs leading-6 text-slate-500">
-              Hợp vật thể nhỏ trên nền đơn giản; có thể để lại vệt.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={!!busy}
-                variant="outline"
-                onClick={() => ai("select")}
-              >
-                Chọn chủ thể
-              </Button>
-              <Button
-                disabled={!!busy}
-                variant="outline"
-                onClick={() => ai("background")}
-              >
-                Tách nền trên máy
-              </Button>
-              <Button disabled={!!busy} variant="outline" onClick={toEditor}>
-                Cắt ảnh / thêm chữ
-              </Button>
-              <Button
-                disabled={!!busy}
-                onClick={() =>
-                  base.current?.toBlob((blob) => {
-                    if (blob) downloadFile("anh-da-sua.png", blob, "image/png")
-                  }, "image/png")
-                }
-              >
-                Tải PNG đã sửa
-              </Button>
-            </div>
-          </>
-        )}
-      </Card>
-      {src && (
-        <Card className="space-y-3 p-5">
-          <h3 className="font-medium">Gợi ý phong cách</h3>
-          <Textarea
-            rows={3}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ví dụ: dịu hơn, tự nhiên, hợp với ảnh CV…"
-          />
-          <p className="text-xs text-slate-500">
-            Nút này gửi bản xem trước 640px cho AI. Bạn chọn áp dụng sau.
-          </p>
-          <Button disabled={!!busy} onClick={() => ai("style")}>
-            Nhờ AI gợi ý phong cách
+        >
+          <span className="photo-upload-icon">
+            <ImagePlus size={29} />
+          </span>
+          <h2>Bắt đầu với một tấm ảnh</h2>
+          <p>Kéo ảnh vào đây hoặc chọn từ thiết bị.</p>
+          <Button icon={Upload} onClick={() => fileInput.current?.click()}>
+            Chọn ảnh
           </Button>
-          {advice && (
-            <div className="rounded-xl bg-violet-50 p-4">
-              <p className="text-sm leading-7">{advice.style}</p>
-              <p className="mt-2 text-xs">
-                Sáng {advice.brightness}% · Tương phản {advice.contrast}% · Màu{" "}
-                {advice.saturate}%
-              </p>
-              {advice.captions.map((c, i) => (
-                <p key={i} className="mt-2 text-xs">
-                  Gợi ý chữ: {c}
-                </p>
-              ))}
-              <Button className="mt-3" variant="outline" onClick={applyStyle}>
-                Thử bộ màu này
+          <small>PNG, JPG, WebP · tối đa 40 MB</small>
+        </Card>
+      ) : (
+        <>
+          <div className="photo-document-bar">
+            <div>
+              <span className="studio-eyebrow">CHỈNH ẢNH</span>
+              <h2 title={fileName}>{fileName || "Ảnh của bạn"}</h2>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!!busy}
+                onClick={() => fileInput.current?.click()}
+              >
+                Đổi ảnh
+              </Button>
+              <Button
+                size="sm"
+                icon={Download}
+                disabled={!!busy || !dimensions.w}
+                onClick={download}
+              >
+                Tải PNG
               </Button>
             </div>
-          )}
-        </Card>
+          </div>
+          <div className="photo-editor-layout">
+            <div className="photo-stage-card">
+              <div className="photo-stage-toolbar">
+                <span>
+                  {dimensions.w} × {dimensions.h}px
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={Undo2}
+                    disabled={!past.length || !!busy}
+                    onClick={undo}
+                  >
+                    Hoàn tác
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={!selected || !!busy}
+                    onClick={clear}
+                  >
+                    Bỏ chọn
+                  </Button>
+                </div>
+              </div>
+              <div className="photo-stage">
+                <div className="photo-canvas-wrap">
+                  <canvas
+                    ref={base}
+                    style={{
+                      display: "block",
+                      maxWidth: "100%",
+                      maxHeight: "min(62dvh,640px)",
+                      width: "auto",
+                      height: "auto",
+                    }}
+                  />
+                  <canvas
+                    ref={overlay}
+                    aria-label="Vùng chọn trên ảnh"
+                    className="absolute inset-0 h-full w-full touch-none"
+                    onPointerDown={down}
+                    onPointerMove={(e) => {
+                      if (drawing.current) paint(point(e))
+                    }}
+                    onPointerUp={() => {
+                      drawing.current = false
+                      last.current = null
+                      count()
+                    }}
+                    onPointerCancel={() => {
+                      drawing.current = false
+                      last.current = null
+                      count()
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="photo-stage-footer">
+                <span
+                  className={
+                    selected
+                      ? "photo-selection-status selected"
+                      : "photo-selection-status"
+                  }
+                >
+                  <i />
+                  {selected
+                    ? "Đã chọn một vùng"
+                    : "Bấm hoặc tô lên vùng muốn sửa"}
+                </span>
+                <span>Màu hồng là vùng chọn</span>
+              </div>
+            </div>
+            <aside className="photo-inspector" aria-label="Công cụ sửa ảnh">
+              <fieldset disabled={!!busy} className="min-w-0 space-y-5">
+                <section>
+                  <h3>Chọn vùng</h3>
+                  <div className="photo-mode-picker">
+                    {[
+                      ["wand", "Theo màu", MousePointer2],
+                      ["brush", "Tô vùng", Paintbrush],
+                      ["unbrush", "Bớt vùng", Eraser],
+                    ].map(([id, label, Icon]) => {
+                      const ToolIcon = Icon as typeof MousePointer2
+                      return (
+                        <button
+                          type="button"
+                          key={String(id)}
+                          aria-pressed={mode === id}
+                          onClick={() => setMode(String(id))}
+                        >
+                          <ToolIcon size={17} />
+                          <span>{String(label)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <label className="photo-slider-label">
+                    <span>{mode === "wand" ? "Độ nhạy màu" : "Cỡ cọ"}</span>
+                    <output>
+                      {mode === "wand" ? tolerance : radius}
+                      {mode === "wand" ? "" : " px"}
+                    </output>
+                    <input
+                      aria-label={mode === "wand" ? "Độ nhạy màu" : "Cỡ cọ"}
+                      type="range"
+                      min={mode === "wand" ? 0 : 3}
+                      max={mode === "wand" ? 120 : 100}
+                      value={mode === "wand" ? tolerance : radius}
+                      onChange={(e) =>
+                        mode === "wand"
+                          ? setTolerance(Number(e.target.value))
+                          : setRadius(Number(e.target.value))
+                      }
+                    />
+                  </label>
+                  <label className="photo-check">
+                    <input
+                      type="checkbox"
+                      checked={add}
+                      onChange={(e) => setAdd(e.target.checked)}
+                    />
+                    Thêm vào vùng hiện có
+                  </label>
+                </section>
+                <section>
+                  <h3>Sửa vùng đã chọn</h3>
+                  {!selected && (
+                    <p className="studio-caption mb-3">
+                      Chọn một vùng trên ảnh để dùng các công cụ này.
+                    </p>
+                  )}
+                  <div className="photo-recolor">
+                    <input
+                      aria-label="Màu mới cho vùng chọn"
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                    />
+                    <span>{color.toUpperCase()}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!selected}
+                      onClick={() => apply("color")}
+                    >
+                      Đổi màu
+                    </Button>
+                  </div>
+                  <div className="grid gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      disabled={!selected}
+                      onClick={() => apply("clear")}
+                    >
+                      Xóa thành trong suốt
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!selected}
+                      onClick={() => apply("erase")}
+                    >
+                      Xóa vật thể nhỏ
+                    </Button>
+                  </div>
+                  <p className="studio-caption mt-2">
+                    Xóa vật thể hợp với nền đơn giản; có thể để lại vệt.
+                  </p>
+                </section>
+                <section>
+                  <h3>Toàn ảnh</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => ai("select")}
+                    >
+                      Chọn chủ thể
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => ai("background")}
+                    >
+                      Tách nền
+                    </Button>
+                  </div>
+                  <Button
+                    className="w-full mt-2"
+                    variant="ghost"
+                    icon={Crop}
+                    onClick={toEditor}
+                  >
+                    Cắt ảnh / thêm chữ
+                  </Button>
+                  <p className="studio-caption mt-2">
+                    Chọn chủ thể và tách nền chạy trên thiết bị.
+                  </p>
+                </section>
+              </fieldset>
+              <details className="photo-style-panel">
+                <summary>
+                  <Sparkles size={16} />
+                  Gợi ý phong cách
+                </summary>
+                <div className="space-y-3 pt-3">
+                  <Textarea
+                    rows={3}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Ví dụ: màu dịu, tự nhiên…"
+                  />
+                  <p className="studio-caption">
+                    Gửi bản xem trước 640px cho AI khi bạn chọn nút dưới.
+                  </p>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    disabled={!!busy}
+                    onClick={() => ai("style")}
+                  >
+                    Nhờ AI gợi ý
+                  </Button>
+                  {advice && (
+                    <div className="photo-style-result">
+                      <p>{advice.style}</p>
+                      <small>
+                        Sáng {advice.brightness}% · Tương phản {advice.contrast}
+                        % · Màu {advice.saturate}%
+                      </small>
+                      {advice.captions.map((c, i) => (
+                        <p key={i}>{c}</p>
+                      ))}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={applyStyle}
+                      >
+                        Thử bộ màu này
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </details>
+              <HelpDetails summary="Cách chọn vùng & lưu ảnh">
+                <p>
+                  Chọn theo màu hoặc tô lên ảnh. Dùng Bớt vùng để sửa vùng chọn.
+                  Ảnh được tối ưu cạnh dài tối đa 1600px; file gốc không thay
+                  đổi.
+                </p>
+              </HelpDetails>
+              {busy && (
+                <div className="photo-working" role="status">
+                  <p>{status || "Đang xem ảnh để gợi ý…"}</p>
+                  {busy === "style" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => abort.current?.abort()}
+                    >
+                      Dừng
+                    </Button>
+                  )}
+                </div>
+              )}
+            </aside>
+          </div>
+        </>
       )}
-      {busy && (
-        <Card className="p-4">
-          <p role="status" className="text-sm leading-7">
-            {status || "Đang xem ảnh để gợi ý phong cách…"}
-          </p>
-          {busy === "style" && (
-            <Button variant="outline" onClick={() => abort.current?.abort()}>
-              Dừng
-            </Button>
-          )}
-        </Card>
-      )}
-    </div>
+    </section>
   )
 }

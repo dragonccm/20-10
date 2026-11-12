@@ -26,7 +26,7 @@ export default function StudioLayout({
 }) {
   return (
     <div
-      className={`${studioFont.className} ${studioFont.variable} studio-ui fixed inset-0 flex flex-col bg-gradient-to-br from-rose-50 via-violet-50 to-sky-50 text-slate-700 lg:flex-row`}
+      className={`${studioFont.className} ${studioFont.variable} studio-ui fixed inset-0 flex flex-col bg-[#f6f7fb] text-slate-700 lg:flex-row`}
     >
       <div className="contents studio-navigation">
         <StudioNav />

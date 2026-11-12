@@ -1036,7 +1036,7 @@ export default function CreativePage() {
               {bgStatus && aiImgs.some((x) => x.busy) && <p className="mt-1.5 text-xs text-violet-700">{bgStatus}</p>}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Select value={aiSize} onChange={(e) => setAiSize(e.target.value)} className="h-10 w-auto min-w-0 flex-1 sm:flex-none" aria-label="Kích thước">
+              <Select value={aiSize} onValueChange={(value) => setAiSize(value)} className="h-10 w-auto min-w-0 flex-1 sm:flex-none" aria-label="Kích thước">
                 <option value="auto">AI tự chọn kích thước</option>
                 {SIZES.map((x, i) => (
                   <option key={x.label} value={i}>
@@ -1200,7 +1200,7 @@ export default function CreativePage() {
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-[160px]">
                     <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
-                    <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v.target.value as AiAspectRatio)} className="mt-1 bg-white">
+                    <Select value={imageGenAspect} onValueChange={(value) => setImageGenAspect(value as AiAspectRatio)} className="mt-1 bg-white">
                       {AI_ASPECT_RATIOS.map((r) => (
                         <option key={r.value} value={r.value}>
                           {r.label}
@@ -1332,7 +1332,7 @@ export default function CreativePage() {
 
           {editOpen && (
             <Card className="creative-ai-panel mb-4 p-3">
-              <div className="mb-3 flex items-center justify-between gap-3"><strong className="text-sm">Trợ lý thiết kế</strong><Select aria-label="Phạm vi AI" className="h-8 w-44" value={aiScope} onChange={(e) => { setAiScope(e.target.value as "page" | "selection"); setAiProposal(null) }}><option value="page">Trang hiện tại</option><option value="selection">Thành phần đang chọn</option></Select><Button size="icon" variant="ghost" icon={X} aria-label="Đóng trợ lý" onClick={() => { aiAbort.current?.abort(); setEditOpen(false) }} /></div>
+              <div className="mb-3 flex items-center justify-between gap-3"><strong className="text-sm">Trợ lý thiết kế</strong><Select aria-label="Phạm vi AI" className="h-8 w-44" value={aiScope} onValueChange={(value) => { setAiScope(value as "page" | "selection"); setAiProposal(null) }}><option value="page">Trang hiện tại</option><option value="selection">Thành phần đang chọn</option></Select><Button size="icon" variant="ghost" icon={X} aria-label="Đóng trợ lý" onClick={() => { aiAbort.current?.abort(); setEditOpen(false) }} /></div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Textarea
                   rows={2}
@@ -1521,7 +1521,7 @@ export default function CreativePage() {
                 {!selected && <span className="text-xs text-slate-500">Chọn chữ, ảnh hoặc hình khối để chỉnh</span>}
                 {selected?.type === "text" && (
                   <>
-                    <Select aria-label="Kiểu chữ" value={selected.fontFamily ? "original" : selected.font ?? "sans"} onChange={(e) => updateEl(selected.id, { font: e.target.value as "sans" | "serif", fontFamily: undefined }, "push")} className="h-8 w-32 pr-6">
+                    <Select aria-label="Kiểu chữ" value={selected.fontFamily ? "original" : selected.font ?? "sans"} onValueChange={(value) => updateEl(selected.id, { font: value as "sans" | "serif", fontFamily: undefined }, "push")} className="h-8 w-32 pr-6">
                       {selected.fontFamily && <option value="original">{selected.fontFamily.replace("Bloom ", "")}</option>}
                       <option value="sans">Hiện đại</option>
                       <option value="serif">Cổ điển</option>
@@ -1669,7 +1669,7 @@ export default function CreativePage() {
                             <Label>Nội dung trên trang</Label>
                             <Textarea rows={3} value={selected.text ?? ""} onChange={(e) => updateEl(selected.id, { text: e.target.value })} />
                           </label>
-                    <Select aria-label="Độ đậm" value={selected.weight ?? 400} onChange={(e) => updateEl(selected.id, { weight: Number(e.target.value) }, "push")} className="h-9 w-full pr-6">
+                    <Select aria-label="Độ đậm" value={selected.weight ?? 400} onValueChange={(value) => updateEl(selected.id, { weight: Number(value) }, "push")} className="h-9 w-full pr-6">
                       <option value={400}>Thường</option>
                       <option value={500}>Vừa</option>
                       <option value={600}>Đậm vừa</option>
@@ -1857,7 +1857,7 @@ export default function CreativePage() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[160px]">
                   <Label className="text-xs text-slate-500">Tỉ lệ khung hình:</Label>
-                  <Select value={imageGenAspect} onChange={(v) => setImageGenAspect(v.target.value as AiAspectRatio)} className="mt-1 bg-white">
+                  <Select value={imageGenAspect} onValueChange={(value) => setImageGenAspect(value as AiAspectRatio)} className="mt-1 bg-white">
                     {AI_ASPECT_RATIOS.map((r) => (
                       <option key={r.value} value={r.value}>
                         {r.label}

@@ -135,7 +135,7 @@ export default function ResearchPage() {
         title={tool.name} guide={tool.guide}
         desc={tool.desc}
         actions={
-          <Select value={style} onChange={(e) => setStyle(e.target.value as Style)} className="w-auto" aria-label="Kiểu trích dẫn" title="Kiểu trích dẫn">
+          <Select value={style} onValueChange={(value) => setStyle(value as Style)} className="w-auto" aria-label="Kiểu trích dẫn" title="Kiểu trích dẫn">
             {Object.entries(STYLE_LABEL).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
