@@ -1,4 +1,5 @@
 "use client"
+import { CitationCompanion } from "@/components/studio/citation-companion"
 
 import type React from "react"
 import { useMemo, useState } from "react"
@@ -29,7 +30,7 @@ export default function OriginalityPage() {
       />
       <Card className="mb-4 p-4">
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-          <Label className="mb-0">Bước 1: đưa bài viết vào đây (dùng chung cho cả ba tab bên dưới)</Label>
+          <Label className="mb-0">Bạn muốn xem lại bài nào?</Label>
           {writingDocs.length > 0 && (
             <Select
               value=""
@@ -56,6 +57,8 @@ export default function OriginalityPage() {
         <Textarea rows={8} value={essay} onChange={(e) => setEssay(e.target.value)} placeholder="Dán toàn bộ bài viết vào đây, kể cả mục References ở cuối bài. Hoặc chọn “Lấy bài đang viết” ở góc phải." />
         <p className="mt-1.5 text-xs text-slate-500">{textStats(essay).words.toLocaleString("vi-VN")} từ</p>
       </Card>
+      <CitationCompanion essay={essay}/>
+      <details className="mt-5 rounded-2xl bg-white/60 p-4"><summary className="mb-4 cursor-pointer text-sm text-slate-500">Xem thêm: danh mục, trùng câu và văn phong</summary>
       <Tabs
         value={tab}
         onChange={setTab}
@@ -74,13 +77,14 @@ export default function OriginalityPage() {
         {tab === "compare" && <CompareSources essay={essay} />}
         {tab === "style" && <StyleReview essay={essay} />}
       </div>
+      </details>
     </div>
   )
 }
 
 const INTRO = {
   citations:
-    "Kiểm tra mỗi trích dẫn trong bài, ví dụ (Smith, 2020), đều có nguồn tương ứng trong danh mục tài liệu cuối bài, và ngược lại, nguồn nào ghi trong danh mục cũng được trích trong bài. Giáo viên rất hay trừ điểm lỗi này. Nếu bài đã có mục References ở cuối, web tự tách ra, bạn không cần dán gì thêm.",
+    "Kiểm tra mỗi trích dẫn trong bài, ví dụ (Smith, 2020), đều có nguồn tương ứng trong danh mục tài liệu cuối bài, và ngược lại, nguồn nào ghi trong danh mục cũng được trích trong bài. Bạn có thể dùng khi muốn kiểm tra thông tin nguồn trước khi chia sẻ bài. Nếu bài đã có mục References ở cuối, web tự tách ra, bạn không cần dán gì thêm.",
   compare:
     "Dán đoạn văn gốc của bài báo hay sách bạn đã đọc. Web tô vàng những cụm từ trong bài bạn trùng nguyên văn với nguồn, để bạn diễn đạt lại bằng lời của mình hoặc đặt trong ngoặc kép kèm trích dẫn.",
   style:

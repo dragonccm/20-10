@@ -46,7 +46,7 @@ function loadEngine(onStatus?: Status) {
 export type Cutout = { src: string; w: number; h: number }
 
 /** Remove the background with the AI model. Returns a trimmed transparent PNG. */
-export async function removeBackgroundAI(src: string, onStatus?: Status): Promise<Cutout> {
+export async function removeBackgroundAI(src: string, onStatus?: Status, trimResult = true): Promise<Cutout> {
   let eng
   try {
     eng = await loadEngine(onStatus)
@@ -70,7 +70,7 @@ export async function removeBackgroundAI(src: string, onStatus?: Status): Promis
   const m = mask.data as Uint8Array
   for (let i = 0; i < m.length; i++) d.data[i * 4 + 3] = Math.min(d.data[i * 4 + 3], m[i])
   ctx.putImageData(d, 0, 0)
-  return trim(c)
+  return trimResult ? trim(c) : {src:c.toDataURL("image/png"),w:c.width,h:c.height}
 }
 
 /**

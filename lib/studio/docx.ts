@@ -67,57 +67,29 @@ export async function docxToHtml(file: File): Promise<string> {
   const xml = await readZipEntry(new Uint8Array(await file.arrayBuffer()), "word/document.xml")
   if (!xml) throw new Error("Không đọc được nội dung tệp DOCX này.")
   const doc = new DOMParser().parseFromString(xml, "application/xml")
-  const paras = Array.from(doc.getElementsByTagNameNS(W, "p"))
-  const out: string[] = []
-  let inList = false
-
-  for (const p of paras) {
-    const style = p.getElementsByTagNameNS(W, "pStyle")[0]?.getAttributeNS(W, "val") ?? ""
-    const isList = p.getElementsByTagNameNS(W, "numPr").length > 0
-    let inner = ""
-    for (const r of Array.from(p.getElementsByTagNameNS(W, "r"))) {
-      let t = ""
-      for (const node of Array.from(r.childNodes) as Element[]) {
-        if (node.localName === "t") t += escapeHtml(node.textContent ?? "")
-        else if (node.localName === "tab") t += " "
-        else if (node.localName === "br") t += "<br>"
-      }
-      if (!t) continue
-      const rPr = r.getElementsByTagNameNS(W, "rPr")[0]
-      const on = (tag: string) => {
-        const el = rPr?.getElementsByTagNameNS(W, tag)[0]
-        if (!el) return false
-        const v = el.getAttributeNS(W, "val")
-        return v !== "0" && v !== "false" && v !== "none"
-      }
-      if (on("b")) t = `<b>${t}</b>`
-      if (on("i")) t = `<i>${t}</i>`
-      if (on("u")) t = `<u>${t}</u>`
-      inner += t
+  if(doc.querySelector('parsererror'))throw Error('Tệp Word có XML bị lỗi.')
+  const paragraph=(p:Element)=>{
+    const style=p.getElementsByTagNameNS(W,'pStyle')[0]?.getAttributeNS(W,'val')||''
+    const isList=p.getElementsByTagNameNS(W,'numPr').length>0
+    let inner=''
+    for(const r of Array.from(p.getElementsByTagNameNS(W,'r'))){
+      let text=''
+      for(const node of Array.from(r.childNodes) as Element[]){if(node.localName==='t')text+=escapeHtml(node.textContent||'');else if(node.localName==='tab')text+=' ';else if(node.localName==='br')text+='<br>'}
+      const rPr=r.getElementsByTagNameNS(W,'rPr')[0]
+      for(const tag of ['b','i','u']){const el=rPr?.getElementsByTagNameNS(W,tag)[0],v=el?.getAttributeNS(W,'val');if(el&&!['0','false','none'].includes(v||''))text=`<${tag}>${text}</${tag}>`}
+      inner+=text
     }
-    if (!inner.trim()) {
-      if (inList) {
-        out.push("</ul>")
-        inList = false
-      }
-      continue
-    }
-    if (isList) {
-      if (!inList) {
-        out.push("<ul>")
-        inList = true
-      }
-      out.push(`<li>${inner}</li>`)
-      continue
-    }
-    if (inList) {
-      out.push("</ul>")
-      inList = false
-    }
-    if (/^(Title|Heading1|Heading2)$/i.test(style)) out.push(`<h2>${inner}</h2>`)
-    else if (/^Heading\d$/i.test(style)) out.push(`<h3>${inner}</h3>`)
-    else out.push(`<p>${inner}</p>`)
+    if(!inner.trim())return '<p><br></p>'
+    if(isList)return `<ul><li>${inner}</li></ul>`
+    const tag=/^(Title|Heading1)$/i.test(style)?'h1':/^Heading2$/i.test(style)?'h2':/^Heading[3-6]$/i.test(style)?'h3':'p'
+    return `<${tag}>${inner}</${tag}>`
   }
-  if (inList) out.push("</ul>")
-  return out.join("")
+  const blocks=(parent:Element):string=>Array.from(parent.children).map(el=>{
+    if(el.localName==='p')return paragraph(el)
+    if(el.localName==='tbl')return '<table><tbody>'+Array.from(el.children).filter(e=>e.localName==='tr').map(tr=>'<tr>'+Array.from(tr.children).filter(e=>e.localName==='tc').map(td=>'<td>'+blocks(td)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'
+    if(el.localName==='sdt'||el.localName==='sdtContent')return blocks(el)
+    return ''
+  }).join('')
+  const body=doc.getElementsByTagNameNS(W,'body')[0]
+  return body?blocks(body):''
 }

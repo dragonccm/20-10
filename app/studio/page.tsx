@@ -11,7 +11,7 @@ type Task = { href:string; icon:LucideIcon; title:string; desc:string; kind:stri
 const TASKS:Task[]=[
  {href:"/studio/documents",icon:FileUp,title:"Giải thích giúp mình đoạn này",desc:"Mang một tài liệu hoặc ảnh chụp vào, cùng tìm điều bạn đang thắc mắc.",kind:"read",color:"#6379a1"},
  {href:"/studio/writing",icon:PenLine,title:"Mình chưa biết viết thế nào",desc:"Bắt đầu từ vài ý nhỏ, hoặc sửa một đoạn bạn đã viết.",kind:"write",color:"#b47185"},
- {href:"/studio/creative?library=photos",icon:Palette,title:"Sửa giúp mình tấm ảnh này",desc:"Cắt cho vừa, chỉnh màu, tách nền hay thêm một chút chữ.",kind:"create",color:"#a38152"},
+ {href:"/studio/helpers?task=photos",icon:Palette,title:"Sửa giúp mình tấm ảnh này",desc:"Cắt cho vừa, chỉnh màu, tách nền hay thêm một chút chữ.",kind:"create",color:"#a38152"},
  {href:"/studio/korean",icon:Languages,title:"Khám phá vài từ mới",desc:"Một chút tiếng Hàn hoặc tiếng Anh, theo nhịp của bạn.",kind:"learn",color:"#8a73a9"},
  {href:"/studio/career",icon:Briefcase,title:"Cùng mình chuẩn bị chiếc CV",desc:"Sắp xếp những điều bạn đã làm và tìm cách kể thật rõ ràng.",kind:"write",color:"#5b8a7d"},
  {href:"/studio/creative?library=presentations",icon:BookOpen,title:"Biến ý tưởng thành vài trang slide",desc:"Chọn một mẫu đơn giản rồi thêm câu chuyện của riêng bạn.",kind:"create",color:"#8a82b2"},

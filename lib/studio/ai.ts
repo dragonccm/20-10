@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react"
 
 export type AiTask =
+  | "document-cards"
+  | "document-extract"
+  | "document-answer"
+  | "document-transform"
+  | "email-compose"
+  | "cv-coach"
+  | "learning-tutor"
+  | "citation-claims"
+  | "citation-evidence"
+  | "photo-advice"
   | "companion"
   | "grammar"
   | "structure"

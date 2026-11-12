@@ -142,3 +142,55 @@ test('companion chat mode cannot propose actions; help mode stays within support
  assert.equal(companionReply.safeParse({...result,execute:'delete-all'}).success,false)
  assert.equal(companionReply.safeParse({...result,draft:{title:'',text:'abc'}}).success,false)
 })
+const knowledge=require('../lib/studio/document-knowledge.ts')
+test('long documents keep every page and character, including the final section',async()=>{
+ const parts=Array.from({length:123},(_,i)=>`Page ${i+1}\n`+('Meaningful paragraph about topic '+i+'.\n').repeat(410));parts[122]+='Final unique conclusion: ZEPHYR has 47 participants.'
+ const doc={id:'long',name:'long.pdf',fileKind:'pdf',parts,text:parts.join('\n')},chunks=knowledge.documentChunks(doc)
+ for(let i=0;i<parts.length;i++)assert.equal(chunks.filter(c=>c.page===i+1).map(c=>c.text).join(''),parts[i])
+ assert.ok(knowledge.retrieveChunks(chunks,'ZEPHYR participants').some(c=>c.page===123))
+ const hash=await knowledge.documentFingerprint(doc);assert.notEqual(await knowledge.documentFingerprint({...doc,parts:[...parts.slice(0,-1),'Changed ending']}),hash)
+ const quote='ZEPHYR has 47 participants.'
+ assert.deepEqual(knowledge.verifiedEvidence([{page:123,quote},{page:1,quote},{page:123,quote:'Invented source quote'}],chunks),[{page:123,quote}])
+ assert.equal(knowledge.verifiedEvidence([{page:123,quote:'ZEPHYR\n has 47 participants.'}],chunks).length,1)
+})
+test('file operations preserve ordering, handle name collisions and isolate email headers',async()=>{
+ const {pageSelection,renamedFiles,pdfTools,renameZip,emlDraft}=require('../lib/studio/file-tools.ts'),{PDFDocument}=require('pdf-lib'),{unzipSync}=require('fflate')
+ assert.deepEqual(pageSelection('5,1,2-4,5',6),[4,0,1,2,3]);for(const v of ['0','4-2','1,x','1-7'])assert.throws(()=>pageSelection(v,6))
+ assert.deepEqual(renamedFiles(['A.pdf','a.pdf','b.pdf'],'',1,'b','a'),['A.pdf','a (2).pdf','a (3).pdf'])
+ const source=await PDFDocument.create();for(let i=0;i<123;i++)source.addPage([200+i,400]);const file=new File([await source.save()],'long.pdf');const bytes=await pdfTools([file],'123,1-2',90);const result=await PDFDocument.load(bytes)
+ assert.equal(result.getPageCount(),3);assert.equal(result.getPages()[0].getWidth(),322);assert.equal(result.getPages()[1].getWidth(),200);assert.equal(result.getPages()[0].getRotation().angle,90)
+ const ac=new AbortController();ac.abort();await assert.rejects(()=>pdfTools([file],'',0,ac.signal))
+ const zipped=unzipSync(await renameZip([new File(['a'],'x'),new File(['b'],'y')],['__proto__','b.txt']));assert.equal(zipped['files/__proto__'][0],97)
+ const eml=emlDraft('a@example.test\r\nBcc: stolen@example.test','Cảm ơn\r\nX-Hack: true','Line1\nLine2');assert.ok(!eml.includes('\r\nBcc:'));assert.ok(eml.includes('charset=UTF-8'));assert.ok(eml.endsWith('Line1\r\nLine2'))
+})
+test('pixel selections stop at boundaries, edits preserve other pixels and inpainting fills a small object',()=>{
+ const {colorRegion,changeRegion,inpaintRegion}=require('../lib/studio/image-regions.ts');const pixels=new Uint8ClampedArray(5*5*4);for(let p=0;p<25;p++)pixels.set([200,200,200,255],p*4);pixels.set([255,0,0,255],12*4)
+ const mask=colorRegion(pixels,5,5,2,2,1);assert.equal(mask.reduce((n,v)=>n+(v?1:0),0),1);const cleared=changeRegion(pixels,mask,'clear');assert.equal(cleared[51],0);assert.deepEqual(cleared.slice(0,48),pixels.slice(0,48));assert.equal(pixels[51],255)
+ const fixed=inpaintRegion(pixels,5,5,mask);assert.deepEqual(Array.from(fixed.slice(48,52)),[200,200,200,255]);assert.throws(()=>inpaintRegion(pixels,5,5,new Uint8Array(25).fill(255)))
+ assert.equal(colorRegion(pixels,5,5,0,0,0).reduce((n,v)=>n+(v?1:0),0),24)
+})
+test('generated slides and mindmaps cover long notes and keep all text within page bounds',()=>{
+ const {notesToSlides,notesToMindmaps}=require('../lib/studio/knowledge-design.ts'),notes=Array.from({length:29},(_,i)=>({text:`Unique note ${i}. `+'detail '.repeat(i===28?180:20),evidence:[{page:i+1,quote:'Source evidence '+i}]}));const slides=notesToSlides('Test',notes)
+ for(const n of notes)assert.ok(slides.slice(1).map(d=>d.els.find(e=>e.type==='text'&&e.y===290)?.text||'').join('').includes(n.text))
+ const boards=notesToMindmaps('Test',[{heading:'Group',notes}]);assert.equal(boards.length,3);assert.equal(boards.flatMap(b=>b.els.filter(e=>e.type==='text'&&e.text.startsWith('Nguồn:'))).length,29)
+ for(const d of [...slides,...boards])for(const e of d.els.filter(e=>e.type==='text'))assert.ok(e.x>=0&&e.y>=0&&e.x+e.w<=d.w&&e.y+e.h<=d.h,d.name+' '+e.text)
+})
+test('analysis resumes after cancellation and hierarchical summary visits every group',async()=>{
+ const ai=require('../lib/studio/ai.ts'),idb=require('../lib/studio/idb.ts'),cache=new Map(),oldAi=ai.callAi,oldGet=idb.idbGet,oldSet=idb.idbSet;idb.idbGet=async k=>structuredClone(cache.get(k));idb.idbSet=async(k,v)=>{cache.set(k,structuredClone(v));return true};let calls=0;const ac=new AbortController();const doc={id:'resume',name:'source',fileKind:'pdf',parts:Array.from({length:15},(_,i)=>`Original evidence for page ${i+1}.`),text:''}
+ try{ai.callAi=async(_task,payload)=>{calls++;const match=payload.text.match(/\[Trang (\d+),[^\n]*\]\n([\s\S]*)/);if(match)return {heading:'Heading',notes:[{text:('Long explanatory statement '+match[1]+'. ').repeat(45),evidence:[{page:Number(match[1]),quote:match[2]}]}]};const original=payload.text.match(/\[Trang (\d+)\] “([^”]+)”/);return {heading:'Reduced',notes:[{text:'A concise idea.',evidence:[{page:Number(original[1]),quote:original[2]}]}]}}
+ await assert.rejects(()=>require('../lib/studio/knowledge-client.ts').analyzeDocument(doc,ac.signal,(done)=>{if(done===4)ac.abort()}));assert.equal(calls,4)
+ const state=await require('../lib/studio/knowledge-client.ts').analyzeDocument(doc,new AbortController().signal,()=>{});assert.equal(calls,15);assert.equal(Object.keys(state.sections).length,15)
+ const brief=await require('../lib/studio/knowledge-client.ts').condenseDocument(doc,state,new AbortController().signal,()=>{});assert.ok(calls>=18);assert.ok(brief.length<=8);assert.ok(knowledge.verifiedNotes(brief,knowledge.documentChunks(doc)).length===brief.length)
+ }finally{ai.callAi=oldAi;idb.idbGet=oldGet;idb.idbSet=oldSet}
+})
+test('citation checks block positive conclusions from explicit lack of evidence; CV arrays normalize safely',()=>{
+ const {guardCitation,cvCoachSchema}=require('../lib/studio/ai-contracts.ts'),v={status:'supports',explanation:'x',evidence:[{page:1,quote:'Nghiên cứu này không chứng minh rằng âm nhạc làm tăng điểm thi.'}]}
+ assert.equal(guardCitation('Âm nhạc làm tăng điểm thi.',v).status,'insufficient');assert.equal(guardCitation('Nghiên cứu này không chứng minh rằng âm nhạc làm tăng điểm thi.',v).status,'supports');assert.equal(guardCitation('Music increases exam results.',{...v,evidence:[{page:1,quote:'This is not proof that music increases exam results.'}]}).status,'insufficient')
+ const parsed=cvCoachSchema.parse({summary:'s',experience:[{id:'real',bullets:['Prepare','Welcome']}],explanations:[],questions:[]});assert.equal(parsed.experience[0].bullets,'Prepare\nWelcome')
+})
+test('a generated design opens as the active design only after successful storage',async()=>{
+ const idb=require('../lib/studio/idb.ts'),storage=require('../lib/studio/storage.ts'),old={get:idb.idbGet,set:idb.idbSet,read:storage.readLS,write:storage.writeLS};const writes=[];let saved
+ try{idb.idbGet=async()=>[{id:'previous'}];idb.idbSet=async(_k,v)=>{saved=v;return true};storage.readLS=(_k,f)=>f;storage.writeLS=(k,v)=>{writes.push([k,v]);return true};assert.equal(await require('../lib/studio/handoff.ts').addDesigns([{id:'new'}]),true);assert.equal(saved[0].id,'new');assert.ok(writes.some(([k,v])=>k==='bloom.creative.active'&&v==='new'))
+ writes.length=0;idb.idbSet=async()=>false;storage.writeLS=(k,v)=>{writes.push([k,v]);return false};assert.equal(await require('../lib/studio/handoff.ts').addDesigns([{id:'not-saved'}]),false);assert.ok(!writes.some(([k])=>k==='bloom.creative.active'))
+ }finally{idb.idbGet=old.get;idb.idbSet=old.set;storage.readLS=old.read;storage.writeLS=old.write}
+})

@@ -1,0 +1,60 @@
+{
+  "principle": "A gift to turn to voluntarily; no guilt, compulsory schedules or hidden assistant permissions.",
+  "items": {
+    "document_ingestion_full_coverage": "implemented_and_verified",
+    "multipage_scan_review": "implemented_and_verified",
+    "document_qa_with_verified_quotes": "implemented_and_verified",
+    "hierarchical_summary": "implemented_and_verified",
+    "document_mindmap_flashcards_plan": "implemented_and_verified",
+    "report_slide_generation": "implemented_and_verified",
+    "reference_format_docx": "implemented_and_verified",
+    "cv_import_templates": "implemented_and_verified",
+    "purpose_based_email": "implemented_and_verified",
+    "opt_in_tutor_curriculum_pomodoro": "implemented_and_verified",
+    "simple_citation_evidence_workflow": "implemented_and_verified",
+    "file_conversion_rename": "implemented_and_verified",
+    "image_selection_object_removal": "implemented_and_verified",
+    "integration_tests_and_deployment": "local_checks_passed_awaiting_deployment"
+  },
+  "deferred_by_user": [
+    "Rust/native iOS application"
+  ],
+  "validation": {
+    "date": "2026-11-12",
+    "automated": "23 regression cases: original templates, AI action scope, all-character coverage of 123 pages, final-page retrieval, quote/page verification, fingerprint invalidation, cancel/resume, hierarchical reduction with mocked AI, PDF order/rotation, filename collisions, header isolation, pixel edit boundaries, native diagram/slide bounds, active-design handoff.",
+    "browser": [
+      "Imported a real 123-page PDF; asked about a unique fact on page 123; AI returned the correct 47-participant answer and exact source; source button opened page 123.",
+      "Imported an image-only PDF; OCR reproduced both synthetic English sentences; source remained unchanged until manual confirmation.",
+      "Analyzed a Vietnamese text fixture retaining negation and study limitations; generated editable report, flashcard questions, mindmap and 3-page PowerPoint. PowerPoint ZIP content checked.",
+      "Filled split-run DOCX placeholders including header and table cell; unchanged images/styles/relationships preserved. LibreOffice rendered output with table, picture, margins, header and footer.",
+      "Exported a genuine DOCX containing article text and a DOI bibliography. XML verified; LibreOffice opened and rendered output.",
+      "Created and downloaded a purpose-based Vietnamese email draft; no email sent.",
+      "Exported only PDF pages 122-123 to two JPEGs in ZIP; downloaded PNG after local object removal; checked PNG format and background pixel restoration.",
+      "Loaded browser model and executed subject selection; tested English grammar tutor with exact-original feedback; CV proposals required preview, applied and successfully undone.",
+      "Queried Crossref metadata for DOI 10.1177/1529100612453266. Evidence check declined an unsupported effectiveness claim from the available excerpt; accepted a claim explicitly stated in the abstract and inserted citation/bibliography."
+    ],
+    "limits": [
+      "OCR and AI suggestions require review; tested scan is a clear synthetic fixture, not a quantified accuracy benchmark.",
+      "Hierarchical coverage and resume have deterministic mocked-AI tests; the 123-page ingestion and final-page question were tested in browser against the real AI service.",
+      "Question answering uses lexical retrieval and discloses searched coverage; it is not semantic search over every sentence.",
+      "Crossref search finds metadata candidates; relevance and support are separate. Positive support receives a second AI audit and exact quote/page validation. This is not proof of research quality.",
+      "Original DOCX layout is preserved through template replacement. Writing import/export preserves semantic text, lists and tables rather than arbitrary Word page layout or embedded images.",
+      "Object removal uses local neighboring colors for small objects on simple backgrounds, not generative reconstruction. Image workspace downscales to 1600px.",
+      "TTS and optional speech input depend on browser/device support; microphone capture was not enabled during QA.",
+      "Learning units are original starting frameworks with official resource links, not copied institutional courses or formal proficiency assessment.",
+      "Rust/native iOS remains a future direction. Public image-generation service remains unconfigured as previously discussed."
+    ],
+    "sources": [
+      "https://www.cambridgeenglish.org/learning-english/activities-for-learners/",
+      "https://learnenglish.britishcouncil.org/",
+      "https://www.iksi.or.kr/lms/main/curriculum.do",
+      "https://www.wgtn.ac.nz/lals/resources/academicwordlist/information",
+      "https://www.psychologicalscience.org/publications/journals/pspi/learning-techniques.html",
+      "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+      "https://pdf-lib.js.org/docs/api/classes/pdfdocument",
+      "https://github.com/101arrowz/fflate/blob/master/docs/functions/zipSync.md"
+    ],
+    "production_build": "passed: Next.js build, typecheck and 23 regression tests",
+    "performance": "Helpers initial JS reduced from 314 kB to 133 kB by loading PDF/ZIP/image tools on demand. Homepage initial JS 115 kB. Model download is opt-in."
+  }
+}

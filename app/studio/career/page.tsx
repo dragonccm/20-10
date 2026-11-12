@@ -1,4 +1,5 @@
 "use client"
+import { CvCoach } from "@/components/studio/cv-coach"
 
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
@@ -72,7 +73,7 @@ function CvBuilder() {
     [cv.education.length > 0, "Có ít nhất một mục học vấn"],
     [cv.experience.length + cv.projects.length > 0, "Có kinh nghiệm hoặc dự án (hoạt động CLB, tình nguyện cũng được)"],
     [cv.experience.every((e) => e.bullets.split("\n").filter((b) => b.trim()).length >= 2), "Mỗi kinh nghiệm có từ 2 gạch đầu dòng"],
-    [/\d/.test(cv.experience.map((e) => e.bullets).join(" ")), "Có con số cụ thể (số người, %, số sự kiện...)"],
+    [/\d/.test(cv.experience.map((e) => e.bullets).join(" ")), "Có thể thêm số liệu nếu bạn có bằng chứng (số người, sự kiện…)"],
     [cv.languages.length > 0, "Ghi rõ trình độ ngoại ngữ (TOPIK, IELTS...)"],
   ]
 
@@ -337,6 +338,7 @@ function CvBuilder() {
             </div>
           </div>
         </div>
+        <CvCoach cv={cv} setCv={setCv}/>
         <Card className="p-4">
           <h3 className="mb-2 text-sm font-medium text-slate-700">Gợi ý hoàn thiện</h3>
           <ul className="space-y-1.5">

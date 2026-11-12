@@ -32,7 +32,9 @@ export async function storeDesigns(ds: Design[]) {
 
 export async function addDesigns(news: Design[]) {
   const ds = await loadDesigns()
-  return storeDesigns([...news, ...ds])
+  const saved=await storeDesigns([...news, ...ds])
+  if(saved&&news[0])writeLS("bloom.creative.active",news[0].id)
+  return saved
 }
 
 /* ---------- Writing Studio ---------- */

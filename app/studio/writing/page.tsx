@@ -1,4 +1,6 @@
 "use client"
+import { CitationCompanion } from "@/components/studio/citation-companion"
+import { inText,refHtml } from "@/lib/studio/cite"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -110,6 +112,7 @@ export default function WritingPage() {
   const snapshotTaken = useRef(false)
 
   const [plain, setPlain] = useState("")
+  const [wordFormat,setWordFormat]=useState({font:"Times New Roman",size:13,marginCm:2,line:1.5})
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved")
   const [selection, setSelection] = useState("")
   const [panel, setPanel] = useState<"review" | "cite" | "tools" | "versions" | "export">("review")
@@ -382,15 +385,15 @@ export default function WritingPage() {
   }
 
   // ---------- Export ----------
-  const exportAs = (fmt: "doc" | "md" | "txt" | "pdf") => {
+  const exportAs = async (fmt: "doc" | "md" | "txt" | "pdf") => {
     const el = editorRef.current
     if (!el || !active) return
     saveNow()
     const name = safeFileName(active.title)
     const html = el.innerHTML
     if (fmt === "doc") {
-      const page = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${escapeHtml(active.title)}</title><style>${PRINT_CSS}</style></head><body><h1>${escapeHtml(active.title)}</h1>${html}</body></html>`
-      downloadFile(`${name}.doc`, "﻿" + page, "application/msword")
+      const {htmlToDocx}=await import("@/lib/studio/word-template")
+      downloadFile(`${name}.docx`,htmlToDocx(`<h1>${escapeHtml(active.title)}</h1>${html}`,wordFormat) as BlobPart,"application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     } else if (fmt === "md") downloadFile(`${name}.md`, `# ${active.title}\n\n${htmlToMarkdown(html)}`, "text/markdown;charset=utf-8")
     else if (fmt === "txt") downloadFile(`${name}.txt`, `${active.title}\n\n${el.innerText}`, "text/plain;charset=utf-8")
     else printHtml(active.title, `<h1>${escapeHtml(active.title)}</h1>${html}`, PRINT_CSS)
@@ -637,7 +640,18 @@ export default function WritingPage() {
                 </div>
               )}
 
-              {panel === "cite" && (
+              {panel === "cite" && <CitationCompanion essay={plain} onInsert={(claim,ref,style)=>{
+                const el=editorRef.current;if(!el)return
+                const source=el.textContent||'',start=source.indexOf(claim)
+                if(start<0||source.indexOf(claim,start+1)>=0){toast.info("Chưa tìm được duy nhất một đoạn trong bài. Bạn có thể chọn đoạn cụ thể rồi kiểm tra lại.");return}
+                const target=start+claim.length-(/[.!?]$/.test(claim)?1:0);const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let offset=0,endNode:Node|null=null,endOffset=0
+                for(let node=walker.nextNode();node;node=walker.nextNode()){const length=node.textContent?.length||0;if(offset+length>=target){endNode=node;endOffset=target-offset;break}offset+=length}
+                if(!endNode)return
+                const rows=Array.from(el.querySelectorAll("[data-bloom-refs] p"));const refKey=ref.doi||ref.title;const existingIndex=rows.findIndex(p=>p.getAttribute("data-source")===refKey);const number=existingIndex>=0?existingIndex+1:rows.length+1;const citation=inText(ref,style,number);if(!source.slice(start+claim.length,start+claim.length+citation.length+3).includes(citation)){const range=document.createRange();range.setStart(endNode,endOffset);range.collapse(true);range.insertNode(document.createTextNode(" "+citation))}
+                if(!ref.doi||!(el.textContent||"").includes(ref.doi)){let list=el.querySelector('[data-bloom-refs]');if(!list){list=document.createElement('div');list.setAttribute('data-bloom-refs','true');const h=document.createElement('h2');h.textContent='Tài liệu tham khảo đã chọn';list.append(h);el.append(list)}const p=document.createElement('p');p.setAttribute('data-source',refKey);p.innerHTML=refHtml(ref,style,number);p.setAttribute('data-sort',ref.authors[0]?.family||ref.title);list.append(p);if(style!=='ieee')for(const row of Array.from(list.querySelectorAll('p')).sort((a,b)=>(a.getAttribute('data-sort')||a.textContent||'').localeCompare(b.getAttribute('data-sort')||b.textContent||'')))list.append(row)}
+                onEditorInput();toast.success("Đã chèn trích dẫn và thông tin nguồn để bạn xem lại.");return el.innerText
+              }}/>}
+              {panel === "cite" && <details className="mt-4"><summary className="cursor-pointer text-xs text-slate-500">Công cụ tìm nguồn theo vùng chọn nâng cao</summary>
                 <CiteFinder
                   editorRef={editorRef}
                   capture={captureTarget}
@@ -646,7 +660,7 @@ export default function WritingPage() {
                   onCite={(id) => updateDoc(active.id, (d) => ({ ...d, cites: [...new Set([...(d.cites ?? []), id])] }))}
                   onEdited={onEditorInput}
                 />
-              )}
+              </details>}
 
               {panel === "tools" && (
                 <div className="space-y-2">
@@ -745,7 +759,7 @@ export default function WritingPage() {
 
               {panel === "export" && (
                 <div className="space-y-2">
-                  <ToolButton icon={FileText} title="Word (.doc)" desc="Mở và chỉnh tiếp bằng Microsoft Word" onClick={() => exportAs("doc")} />
+                  <details className="rounded-xl border border-slate-200 p-3"><summary className="cursor-pointer text-sm">Định dạng Word khi tải về</summary><div className="mt-3 space-y-3"><label className="block text-xs">Phông chữ<select className="mt-1 w-full rounded-lg border p-2" value={wordFormat.font} onChange={e=>setWordFormat({...wordFormat,font:e.target.value})}>{["Times New Roman","Arial","Calibri"].map(x=><option key={x}>{x}</option>)}</select></label>{([["size","Cỡ chữ (pt)",9,24,.5],["marginCm","Lề bốn phía (cm)",1,4,.1],["line","Giãn dòng",1,2.5,.1]] as const).map(([key,label,min,max,step])=><label key={key} className="block text-xs">{label}<input className="mt-1 w-full rounded-lg border p-2" type="number" min={min} max={max} step={step} value={wordFormat[key]} onChange={e=>setWordFormat({...wordFormat,[key]:Math.min(max,Math.max(min,Number(e.target.value)||min))})}/></label>)}<p className="text-xs leading-6 text-slate-500">Khổ A4. Nếu có mẫu quy định riêng, dùng “Điền đúng mẫu Word” để giữ bố cục của mẫu.</p><a className="text-xs text-violet-600 underline" href="/studio/helpers?task=template">Dùng mẫu Word của mình</a></div></details><ToolButton icon={FileText} title="Word (.docx)" desc="Mở và chỉnh tiếp bằng Microsoft Word" onClick={() => exportAs("doc")} />
                   <ToolButton icon={FileDown} title="PDF" desc="Chọn “Lưu dưới dạng PDF” trong hộp thoại in" onClick={() => exportAs("pdf")} />
                   <ToolButton icon={FileText} title="Markdown (.md)" desc="Giữ tiêu đề, danh sách, chữ đậm" onClick={() => exportAs("md")} />
                   <ToolButton icon={FileText} title="Văn bản (.txt)" desc="Chỉ chữ, không định dạng" onClick={() => exportAs("txt")} />

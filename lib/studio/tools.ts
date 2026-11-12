@@ -4,6 +4,7 @@ import type { GuideSpec } from "@/components/studio/ui"
 export type Tool = { slug: string; name: string; short: string; desc: string; icon: LucideIcon; tint: string; guide: GuideSpec }
 
 export const TOOLS: Tool[] = [
+ {slug:"helpers",name:"Những việc nhỏ",short:"Việc nhỏ",desc:"Soạn email, đổi tên và định dạng file, điền mẫu Word hoặc chọn một khoảng tập trung.",icon:FolderOpen,tint:"bg-teal-100 text-teal-700",guide:{id:"helpers",steps:["Chọn việc bạn đang cần.","Xem trước và tải một bản mới; file gốc vẫn được giữ.","Email chỉ là bản nháp để bạn đọc và tự gửi."]}},
   {
     slug: "documents",
     name: "Tài liệu của tôi",

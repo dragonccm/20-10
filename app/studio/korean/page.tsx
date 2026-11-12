@@ -1,4 +1,5 @@
 "use client"
+import { LearningCenter } from "@/components/studio/learning-center"
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -108,7 +109,7 @@ export default function KoreanPage() {
   const [seededKo, setSeededKo] = useStored("bloom.korean.seeded", false)
   const [cardsEn, setCardsEn, loadedEn] = useStored<FlashCard[]>("bloom.english.cards", [])
   const [seededEn, setSeededEn] = useStored("bloom.english.seeded", false)
-  const [tab, setTab] = useState<"review" | "deck" | "grammar" | "check">("review")
+  const [tab, setTab] = useState<"review" | "deck" | "grammar" | "check" | "learn">("learn")
 
   useEffect(() => {
     if (loadedKo && !seededKo) {
@@ -175,7 +176,7 @@ export default function KoreanPage() {
           </div>
         </div>
         <div className="text-xs text-slate-500">
-          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Kho từ học thuật Academic Word List & Collocations C1"}
+          {lang === "ko" ? "Luyện từ vựng TOPIK & ngữ pháp tiểu từ" : "Từ học thuật Academic Word List và cụm từ theo ngữ cảnh"}
         </div>
       </div>
 
@@ -183,6 +184,7 @@ export default function KoreanPage() {
         value={tab}
         onChange={setTab}
         tabs={[
+          { id: "learn", label: "Góc học tự chọn", icon: BookOpen },
           { id: "review", label: "Ôn tập", icon: RotateCcw },
           { id: "deck", label: `Bộ thẻ (${cards.length})`, icon: Layers },
           { id: "grammar", label: lang === "ko" ? "Tiểu từ" : "Học thuật & Collocations", icon: BookOpen },
@@ -190,6 +192,7 @@ export default function KoreanPage() {
         ]}
       />
       <div className="mt-4">
+        {tab === "learn" && <LearningCenter lang={lang}/>}
         {tab === "review" && <Review cards={cards} setCards={setCards} lang={lang} />}
         {tab === "deck" && <Deck cards={cards} setCards={setCards} lang={lang} />}
         {tab === "grammar" && (lang === "ko" ? <Grammar /> : <EnglishGrammar />)}
@@ -721,7 +724,7 @@ function Deck({ cards, setCards, lang = "ko" }: { cards: FlashCard[]; setCards: 
 
   const exportCsv = () => {
     const esc = (s = "") => `"${s.replace(/"/g, '""')}"`
-    const fileName = lang === "ko" ? "korean-flashcards.csv" : "cambridge-awl-flashcards.csv"
+    const fileName = lang === "ko" ? "korean-flashcards.csv" : "academic-word-list-flashcards.csv"
     downloadFile(fileName, "﻿" + ["front,back,example", ...cards.map((c) => [c.front, c.back, c.example].map(esc).join(","))].join("\n"), "text/csv;charset=utf-8")
   }
 
@@ -885,7 +888,7 @@ function EnglishGrammar() {
           <BookOpen className="h-5 w-5 text-blue-600" />
           <div>
             <h3 className="font-semibold text-slate-800">Cụm từ liên kết học thuật</h3>
-            <p className="text-xs text-slate-500">Các mẫu câu dẫn chuẩn mực cho bài luận C1 & IELTS Academic</p>
+            <p className="text-xs text-slate-500">Một số cách diễn đạt để tham khảo khi viết bài luận</p>
           </div>
         </div>
 

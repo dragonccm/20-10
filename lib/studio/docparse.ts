@@ -62,10 +62,12 @@ export function unsupportedReason(name: string) {
   return "Hiện hỗ trợ PDF, Word (.docx), PowerPoint (.pptx), ảnh chụp (JPG/PNG) và .txt."
 }
 
-export async function parseFile(file: Blob, name: string): Promise<Parsed> {
+export type ParseOptions = { signal?: AbortSignal; onProgress?: (page: number, total: number) => void }
+
+export async function parseFile(file: Blob, name: string, options: ParseOptions = {}): Promise<Parsed> {
   const kind = fileKind(name, file.type)
   if (!kind) throw new Error(unsupportedReason(name))
-  if (kind === "pdf") return parsePdf(file)
+  if (kind === "pdf") return parsePdf(file, options)
   if (kind === "docx") {
     const html = await docxToHtml(file as File)
     const text = htmlText(html)
@@ -82,7 +84,7 @@ export async function parseFile(file: Blob, name: string): Promise<Parsed> {
 function htmlText(html: string) {
   const d = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html")
   return Array.from(d.body.firstElementChild!.children)
-    .map((el) => (el.tagName === "UL" || el.tagName === "OL" ? Array.from(el.children).map((li) => "- " + li.textContent).join("\n") : el.textContent ?? ""))
+    .map((el) => (el.tagName === "UL" || el.tagName === "OL" ? Array.from(el.children).map((li) => "- " + li.textContent).join("\n") : el.tagName === "TABLE" ? Array.from(el.querySelectorAll("tr")).map(row=>Array.from(row.children).map(cell=>cell.textContent||"").join(" | ")).join("\n") : el.textContent ?? ""))
     .filter((s) => s.trim())
     .join("\n\n")
 }
@@ -158,12 +160,16 @@ async function openPdf(file: Blob) {
 
 type Line = { text: string; y: number; h: number }
 
-async function parsePdf(file: Blob): Promise<Parsed> {
+async function parsePdf(file: Blob, options: ParseOptions): Promise<Parsed> {
   const pdf = await openPdf(file)
   const parts: string[] = []
   let ratio = 1 / 1.414
-  const pages = Math.min(pdf.numPages, 80)
+  const pages = pdf.numPages
+  try {
   for (let i = 1; i <= pages; i++) {
+    options.signal?.throwIfAborted()
+    options.onProgress?.(i, pages)
+    if (i % 8 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0))
     const page = await pdf.getPage(i)
     if (i === 1) {
       const vp = page.getViewport({ scale: 1 })
@@ -189,7 +195,7 @@ async function parsePdf(file: Blob): Promise<Parsed> {
     if (cur.trim()) lines.push({ text: cur.replace(/\s+/g, " ").trim(), y, h })
     parts.push(linesToParagraphs(lines))
   }
-  await pdf.destroy?.()
+  } finally { await pdf.destroy?.() }
   const text = parts.filter(Boolean).join("\n\n")
   return { kind: "pdf", text, parts, ratio }
 }
@@ -215,13 +221,17 @@ function linesToParagraphs(lines: Line[]) {
   return out
 }
 
+export async function pdfPageCount(file:Blob){const pdf=await openPdf(file);try{return pdf.numPages as number}finally{await pdf.destroy?.()}}
+
 /** Renders PDF pages to JPEG data URLs (for thumbnails or importing as slide images). */
-export async function renderPdfPages(file: Blob, width = 1600, maxPages = 40, onProgress?: (i: number, n: number) => void) {
+export async function renderPdfPages(file: Blob, width = 1600, maxPages = 40, onProgress?: (i: number, n: number) => void, startPage = 1) {
   const pdf = await openPdf(file)
   const out: { src: string; w: number; h: number }[] = []
-  const n = Math.min(pdf.numPages, maxPages)
-  for (let i = 1; i <= n; i++) {
-    onProgress?.(i, n)
+  const first = Math.max(1, Math.floor(startPage))
+  const n = Math.min(pdf.numPages, first + maxPages - 1)
+  try {
+  for (let i = first; i <= n; i++) {
+    onProgress?.(i-first+1, n-first+1)
     const page = await pdf.getPage(i)
     const vp1 = page.getViewport({ scale: 1 })
     const vp = page.getViewport({ scale: width / vp1.width })
@@ -234,7 +244,7 @@ export async function renderPdfPages(file: Blob, width = 1600, maxPages = 40, on
     await page.render({ canvasContext: ctx, viewport: vp }).promise
     out.push({ src: c.toDataURL("image/jpeg", 0.82), w: c.width, h: c.height })
   }
-  await pdf.destroy?.()
+  } finally { await pdf.destroy?.() }
   return out
 }
 

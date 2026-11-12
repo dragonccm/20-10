@@ -49,23 +49,23 @@ export function fromCrossref(w: any): Omit<Ref, "id" | "addedAt"> {
     url: w.URL,
     type: w.type,
     verified: true,
-    abstract: w.abstract ? strip(w.abstract.replace(/<jats:title>[^<]*<\/jats:title>/gi, " ")).slice(0, 1200) || undefined : undefined,
+    abstract: w.abstract ? strip(w.abstract.replace(/<jats:title>[^<]*<\/jats:title>/gi, " ")) || undefined : undefined,
   }
 }
 
 const CR = "https://api.crossref.org/works"
 const FIELDS = "DOI,title,author,issued,published,container-title,volume,issue,page,publisher,URL,type"
 
-export async function lookupDoi(doi: string) {
-  const res = await fetch(`${CR}/${encodeURIComponent(doi)}`)
+export async function lookupDoi(doi: string, signal?: AbortSignal) {
+  const res = await fetch(`${CR}/${encodeURIComponent(doi)}`,{signal})
   if (res.status === 404) return null
   if (!res.ok) throw new Error("Crossref đang bận, thử lại sau.")
   const data = await res.json()
   return fromCrossref(data.message)
 }
 
-export async function searchWorks(query: string, rows = 12, withAbstract = false) {
-  const res = await fetch(`${CR}?query.bibliographic=${encodeURIComponent(query)}&rows=${rows}&select=${FIELDS}${withAbstract ? ",abstract" : ""}`)
+export async function searchWorks(query: string, rows = 12, withAbstract = false, signal?: AbortSignal) {
+  const res = await fetch(`${CR}?query.bibliographic=${encodeURIComponent(query)}&rows=${rows}&select=${FIELDS}${withAbstract ? ",abstract" : ""}`,{signal})
   if (!res.ok) throw new Error("Crossref đang bận, thử lại sau.")
   const data = await res.json()
   return (data.message?.items ?? []).map(fromCrossref) as Omit<Ref, "id" | "addedAt">[]

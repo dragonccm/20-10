@@ -38,6 +38,7 @@ import { idbDel, idbGet, idbSet } from "@/lib/studio/idb"
 import { fileToDataUrl } from "@/lib/studio/image"
 import { ACCEPT, MAX_FILE, aiText, detectLang, fileKind, guessKind, parseFile, renderPdfPages, unsupportedReason, wordCount, type DocKind, type FileKind } from "@/lib/studio/docparse"
 import { addDesigns, documentToDesigns, makeKoreanCards, parseCv, saveImportedCv, sendToOriginality, sendToWriting } from "@/lib/studio/handoff"
+import { DocumentWorkbench } from "@/components/studio/document-workbench"
 import { cn } from "@/lib/utils"
 
 const tool = TOOLS.find((t) => t.slug === "documents")!
@@ -87,6 +88,8 @@ export default function DocumentsPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [busy, setBusy] = useState<string[]>([])
   const [drag, setDrag] = useState(false)
+  const [readProgress, setReadProgress] = useState("")
+  const reading = useRef<AbortController|null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -118,13 +121,14 @@ export default function DocumentsPage() {
       }
       setBusy((b) => [...b, file.name])
       try {
-        const p = await parseFile(file, file.name)
+        reading.current = new AbortController()
+        const p = await parseFile(file, file.name, {signal:reading.current.signal,onProgress:(i,n)=>setReadProgress(`Đang đọc ${file.name} · ${i}/${n} trang`)})
         const id = uid()
         let thumb: string | undefined
         if (fk === "image") thumb = (await fileToDataUrl(file, 900, 0.8)).src
         else if (fk === "pdf") thumb = (await renderPdfPages(file, 420, 1).catch(() => []))[0]?.src
         if (fk !== "image" && !p.text.trim()) {
-          toast.warning(`${file.name}: không thấy chữ nào (có thể là bản scan). Hãy chụp ảnh từng trang rồi tải lên để AI đọc chữ.`)
+          toast.warning(`${file.name}: không thấy chữ nào (có thể là bản scan). Bạn có thể chọn đọc các trang scan trong phần Cùng tài liệu.`)
         }
         const item: DocItem = {
           id,
@@ -144,12 +148,12 @@ export default function DocumentsPage() {
         if (!(await idbSet(fileKey(id), file))) toast.warning("Không lưu được tệp gốc (bộ nhớ đầy), nhưng nội dung chữ vẫn dùng được.")
         setDocs((ds) => [item, ...ds])
         setActiveId(id)
-        if (fk === "image") ocr(item, file)
-        else toast.success(`Đã đọc "${file.name}"`)
+        toast.success(`Đã đọc "${file.name}"`)
       } catch (e) {
         toast.error(`${file.name}: ${(e as Error).message}`)
       } finally {
         setBusy((b) => b.filter((n) => n !== file.name))
+        setReadProgress("")
       }
     }
   }
@@ -184,6 +188,7 @@ export default function DocumentsPage() {
 
   return (
     <div>
+      {readProgress&&<Card className="mb-4 flex items-center justify-between gap-3 p-4"><span role="status" className="text-sm">{readProgress}</span><Button variant="outline" onClick={()=>reading.current?.abort()}>Dừng đọc</Button></Card>}
       <PageHeader
         icon={tool.icon}
         tint={tool.tint}
@@ -234,7 +239,7 @@ export default function DocumentsPage() {
 
       {loaded && !docs.length ? (
         <Card>
-          <Empty icon={FolderOpen} title="Chưa có tài liệu nào" desc="Tệp chỉ được đọc ngay trên máy này. Chỉ phần chữ được gửi cho AI khi bạn bấm vào một nút AI." />
+          <Empty icon={FolderOpen} title="Chưa có tài liệu nào" desc="Tệp chỉ được đọc ngay trên máy này. Chữ hoặc những trang scan bạn chọn chỉ được gửi cho AI khi bạn chủ động dùng chức năng tương ứng." />
         </Card>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)]">
@@ -290,7 +295,7 @@ function DocView({
   ocrBusy: boolean
   router: ReturnType<typeof useRouter>
 }) {
-  const [tab, setTab] = useState<"content" | "review" | "chat" | "quiz">("content")
+  const [tab, setTab] = useState<"content" | "review" | "chat" | "quiz" | "workbench">("workbench")
   const [moving, setMoving] = useState("")
   const [progress, setProgress] = useState("")
   const words = wordCount(doc.text)
@@ -476,19 +481,21 @@ function DocView({
         value={tab}
         onChange={setTab}
         tabs={[
-          { id: "content", label: "Nội dung", icon: FileText },
+          { id: "workbench", label: "Cùng tài liệu", icon: BookOpenCheck },
+          { id: "content", label: "Nội dung gốc", icon: FileText },
           { id: "review", label: "AI nhận xét", icon: Sparkles },
-          { id: "chat", label: "Hỏi đáp", icon: MessageCircle },
-          { id: "quiz", label: "Ôn tập", icon: BookOpenCheck },
+
         ]}
       />
 
+      {tab === "workbench" && <DocumentWorkbench doc={doc} update={patch=>update(patch)} />}
       {tab === "content" && <Content doc={doc} onOcr={onOcr} ocrBusy={ocrBusy} />}
-      {tab !== "content" && !hasText && (
+      {tab !== "content" && tab !== "workbench" && !hasText && (
         <Card>
           <Empty icon={FileImage} title="Chưa có chữ để AI đọc" desc={doc.fileKind === "image" ? "Bấm “Đọc chữ trong ảnh” ở tab Nội dung trước nhé." : "Tệp này không có lớp chữ (có thể là bản scan). Hãy chụp ảnh từng trang rồi tải lên."} />
         </Card>
       )}
+      {tab === "review" && hasText && forAi.length >= 23000 && <p className="text-xs text-amber-700">Nhận xét nhanh chỉ đọc phần đầu. Để xử lý toàn bộ tài liệu, dùng “Cùng tài liệu”.</p>}
       {tab === "review" && hasText && <Review doc={doc} forAi={forAi} update={update} />}
       {tab === "chat" && hasText && <Chat doc={doc} forAi={forAi} update={update} />}
       {tab === "quiz" && hasText && <QuizView doc={doc} forAi={forAi} update={update} />}
