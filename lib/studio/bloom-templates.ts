@@ -1,11 +1,11 @@
-import { blank, type Design } from "./design"
+import { blank, fitText, type Design } from "./design"
 import { nativeScene, SCENE_NAMES } from "./native-scenes"
 import { uid } from "./storage"
 import type { StudioCategory } from "./design-formats"
 
 export type BloomTemplate = { id: string; name: string; category: StudioCategory; caption: string; style: number; accent: string; paper: string; ink: string; w: number; h: number; title: string; subtitle: string }
 const PALETTES = [
- ["#5750b5","#f3f0ff","#25213e"], ["#a33c45","#fbf1e7","#392327"], ["#176a59","#eef5ec","#213b32"], ["#2669ad","#eff5fc","#173554"],
+ ["#426751","#f4f2e9","#243c32"], ["#9b5146","#f6eee6","#3c302b"], ["#176a59","#eef5ec","#213b32"], ["#385d78","#f0f3f5","#24394a"],
  ["#ba5426","#fff4e9","#412b22"], ["#9a4e83","#fbf0f7","#382239"], ["#b78e33","#f8f5e9","#383221"], ["#257e88","#eaf8f7","#183c40"],
  ["#5c647c","#f1f3f8","#242b3f"], ["#a04b3b","#f7eee6","#3e2c29"],
 ]
@@ -22,9 +22,10 @@ export const BLOOM_TEMPLATES: BloomTemplate[] = Object.entries(names).flatMap(([
  return { id:`bloom-${category}-${String(i+1).padStart(2,"0")}`,name,category:category as StudioCategory,caption:SCENE_NAMES[category as keyof typeof SCENE_NAMES][i],style:i,accent,paper,ink,w,h,title:name,subtitle:category==="social"?"Ý tưởng của bạn xứng đáng được chia sẻ.":"Một khởi đầu để bạn kể câu chuyện của mình." }
 }))
 export function buildBloomDesign(meta: BloomTemplate, page=0): Design {
- return {...blank(meta.w,meta.h,meta.name),bg:{from:meta.paper,to:meta.paper,angle:135},els:nativeScene(meta,page),provenance:{kind:"bloom",templateId:meta.id,license:"CC0-1.0"}}
+ const design:Design = {...blank(meta.w,meta.h,meta.name),bg:{from:meta.paper,to:meta.paper,angle:135},els:nativeScene(meta,page),provenance:{kind:"bloom",templateId:meta.id,license:"CC0-1.0"}}
+ return typeof document === "undefined" ? design : {...design,...fitText(design,false)}
 }
 export function buildBloomDeck(meta: BloomTemplate): Design[] {
- const deck={id:uid(),name:meta.name,revision:4,source:"bloom" as const}
+ const deck={id:uid(),name:meta.name,revision:5,source:"bloom" as const}
  return Array.from({length:5},(_,page)=>({...buildBloomDesign(meta,page),name:`${meta.name} · ${page+1}`,deck}))
 }

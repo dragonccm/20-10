@@ -88,7 +88,7 @@ export function Select({
     [container, setContainer] = useState<HTMLElement | null>(null)
   useEffect(
     () =>
-      setContainer(trigger.current?.closest<HTMLElement>(".studio-ui") ?? null),
+      setContainer(document.getElementById("studio-overlays")),
     [],
   )
   const selected = String(value ?? local),

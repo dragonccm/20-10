@@ -21,7 +21,7 @@ locally under reference-material and excluded from deployment. User drafts in
 browser storage are not deleted, but drafts referencing the removed public
 third-party assets need original user-supplied media to render again.
 
-Native collection (20 each / 240 in total):
+Native collection (20 each / 220 in total):
 - CV: 20 themes, 20 document compositions; structured editing, PDF printing, JSON backup.
 - Presentations: 20 original five-page decks; layers, PNG/JPG, editable PPTX.
 - Social: 20 original post/story/banner/thumbnail layouts; native canvas editing.
@@ -40,9 +40,8 @@ Native collection (20 each / 240 in total):
   Publishing is manual; no invented backend or automatic hosting provisioning.
 - Email: 20 inline-style HTML email starters; source editing, preview, HTML export.
   No sending service, recipient import, tracking or deliverability claims.
-- Video: 20 title-motion presets; text/color/aspect/duration editing, preview and
-  browser video recording (WebM or MP4 depending on codec support).
-  No audio tracks, uploaded clip timeline, or multi-track compositor yet.
+- Video editing retired on 2026-11-13. Old links return to the design library;
+  existing local video data is left untouched.
 
 Customization comparison:
 Canva documents grouping, multiple selection, locks, ordering/alignment, typography,
@@ -71,7 +70,7 @@ byte-for-byte checks, reducing the initial HTML while keeping the media unchange
 
 Next advanced release candidates:
 Multi-select/groups, full board panning/connectors, branded styles, multi-page AI
-change plans, richer formula/XLSX support, uploaded video/audio timeline, and native
+change plans, richer formula/XLSX support, and native
 site publishing after the hosting/ownership workflow has been specified.
 
 Composition update (2026-11-11):
@@ -89,3 +88,13 @@ templates use separate storage keys. Existing user-created canvas drafts are not
 rewritten when the collection changes.
 Regression checks compare native geometry without text/colors, validate template
 bounds, verify every CV retains personal data, and compare HTML structures.
+
+Studio refinement (2026-11-13):
+Fixed-size contextual toolbar prevents canvas rescaling when selecting a layer.
+Stable scrollbar gutters and a separate overlay root preserve workspace geometry.
+Short opacity transitions respect reduced-motion preferences; busy buttons retain
+their label dimensions. Saved fields restore before paint; storage writes debounce
+and flush on page hide/unmount. Preview and editor share one element renderer.
+Original vector still lifes replace repeated mountain placeholders, with aspect-
+correct crops and measured text fitting. Only the current collection is offered;
+older canvas drafts remain in local storage. No Canva assets are redistributed.

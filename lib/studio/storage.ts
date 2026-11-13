@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 export function readLS<T>(key: string, fallback: T): T {
   try {
@@ -23,19 +23,39 @@ export function writeLS(key: string, value: unknown): boolean {
 /** State persisted in localStorage (per browser). Loads after mount to stay SSR-safe. */
 export function useStored<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial)
-  const [loaded, setLoaded] = useState(false)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
+  const latest = useRef({ key, value: initial, ready: false })
 
-  useEffect(() => {
+  // Restore before paint on client navigation, so a saved form does not flash empty.
+  useLayoutEffect(() => {
+    const previous = latest.current
+    if (previous.ready && previous.key !== key) writeLS(previous.key, previous.value)
     setValue(readLS(key, initial))
-    setLoaded(true)
+    setLoadedKey(key)
+    // The initial value is a fallback, not a reason to reload an edited form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
+  if (loadedKey === key) latest.current = { key, value, ready: true }
 
   useEffect(() => {
-    if (loaded) writeLS(key, value)
-  }, [key, value, loaded])
+    if (loadedKey !== key) return
+    const timer = setTimeout(() => writeLS(key, value), 180)
+    return () => clearTimeout(timer)
+  }, [key, value, loadedKey])
 
-  return [value, setValue, loaded] as const
+  useEffect(() => {
+    const flush = () => {
+      const snapshot = latest.current
+      if (snapshot.ready && snapshot.key === key) writeLS(key, snapshot.value)
+    }
+    window.addEventListener("pagehide", flush)
+    return () => {
+      window.removeEventListener("pagehide", flush)
+      flush()
+    }
+  }, [key])
+
+  return [value, setValue, loadedKey === key] as const
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36)

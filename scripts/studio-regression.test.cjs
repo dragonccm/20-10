@@ -15,14 +15,27 @@ const {WORKSPACE_NAMES,htmlTemplate,sheetTemplate,documentTemplate} = require('.
 const {cellValue,sheetCsv} = require('../lib/studio/sheet-calc.ts')
 const {applyDesignAction,designContext} = require('../lib/studio/design-actions.ts')
 const allNames=[]
-test('each of the 12 categories has 20 usable original templates', () => {
- assert.equal(FORMATS.length,12)
+test('each of the 11 categories has 20 usable original templates', () => {
+ assert.equal(FORMATS.length,11)
  for(const format of FORMATS){const list=format.id==='cv'?CV_THEMES:WORKSPACE_NAMES[format.id]||BLOOM_TEMPLATES.filter(t=>t.category===format.id);assert.equal(list.length,20,format.id);const names=list.map(t=>typeof t==='string'?t:t.name);assert.equal(new Set(names).size,20,format.id);allNames.push(...names)}
- assert.equal(allNames.length,240)
+ assert.equal(allNames.length,220)
 })
 test('native templates have editable layers, unique identities and no third-party URLs', () => {
  for(const meta of BLOOM_TEMPLATES){const d=buildBloomDesign(meta);assert.ok(d.els.length>=3);assert.equal(d.provenance.license,'CC0-1.0');assert.equal(new Set(d.els.map(e=>e.id)).size,d.els.length);for(const el of d.els){assert.ok(el.w>0&&el.h>0,meta.id);assert.ok(Number.isFinite(el.x)&&Number.isFinite(el.y));if(el.src)assert.ok(el.src.startsWith('data:image/svg+xml;'),meta.id)}assert.ok(!JSON.stringify(d).includes('/templates/canva/'))}
  for(const meta of BLOOM_TEMPLATES.filter(t=>t.category==='presentations')){const pages=buildBloomDeck(meta);assert.equal(pages.length,5);assert.equal(new Set(pages.map(d=>d.id)).size,5);assert.equal(new Set(pages.map(d=>d.deck.id)).size,1)}
+})
+test('original illustration frames crop to their exact aspect instead of stretching artwork', () => {
+ let frames=0
+ for(const meta of BLOOM_TEMPLATES){
+  const pages=meta.category==='presentations'?buildBloomDeck(meta):[buildBloomDesign(meta)]
+  for(const d of pages)for(const e of d.els.filter(e=>e.type==='image')){
+   frames++
+   assert.ok(e.crop,'missing crop: '+meta.name)
+   assert.ok(Math.abs((e.nw*e.crop.w)/(e.nh*e.crop.h)-e.w/e.h)<1e-8,meta.name+' distorts an illustration')
+   assert.ok(!decodeURIComponent(e.src).includes('ẢNH CỦA BẠN'),meta.name+' still uses the repeated landscape placeholder')
+  }
+ }
+ assert.ok(frames>100)
 })
 test('HTML and email templates export self-contained source, documents contain editable sections', () => {
  for(const kind of ['code','websites','email'])for(let i=0;i<20;i++){const html=htmlTemplate(kind,i);assert.ok(html.startsWith('<!doctype html>'));assert.ok(html.includes(WORKSPACE_NAMES[kind][i]));assert.ok(!/(?:src|href)=["']https?:\/\//i.test(html));if(kind==='email'){assert.ok(html.includes('<table'));assert.ok(!html.includes('<script'))}}
@@ -108,19 +121,9 @@ test('HTML and document collections contain distinct structures and contextual c
  assert.ok(new Set(Array.from({length:20},(_,i)=>skeleton(documentTemplate(i).html))).size>=17)
  assert.equal(new Set(Array.from({length:20},(_,i)=>sheetTemplate(i)[0].join('|'))).size,20)
 })
-test('twenty motion presets draw distinct compositions in both aspect ratios', () => {
- const {paintVideo}=require('../lib/studio/video-scenes.ts')
- for(const portrait of [false,true]){
-  const drawings=[]
-  for(let index=0;index<20;index++){
-   const commands=[]
-   const ctx={save(){},restore(){},scale(){},beginPath(){},fill(){},stroke(){},measureText:s=>({width:s.length*35}),fillRect:(...a)=>commands.push(['rect',...a]),arc:(...a)=>commands.push(['arc',...a]),fillText:(value,...a)=>commands.push(['text',...a])}
-   paintVideo({width:portrait?720:1280,height:portrait?1280:720,getContext:()=>ctx},{title:'Một tiêu đề để kiểm tra',subtitle:'Thông điệp của bạn',accent:'#5750b5',paper:'#f3f0ff',ink:'#25213e',duration:5,portrait},.4,index)
-   assert.ok(commands.length>3);for(const [, ...values] of commands)assert.ok(values.every(Number.isFinite))
-   drawings.push(JSON.stringify(commands))
-  }
-  assert.equal(new Set(drawings).size,20)
- }
+test('video editing is absent from the supported template catalog', () => {
+ assert.ok(!FORMATS.some(f=>f.id==='video'))
+ assert.equal(WORKSPACE_NAMES.video,undefined)
 })
 test('interior slide pages vary across decks and keep text inside the slide', () => {
  const decks=BLOOM_TEMPLATES.filter(t=>t.category==='presentations')

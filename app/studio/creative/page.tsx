@@ -62,11 +62,13 @@ import { documentToDesigns, loadDesigns, storeDesigns } from "@/lib/studio/hando
 import { fileKind } from "@/lib/studio/docparse"
 import { fileToDataUrl, loadImg } from "@/lib/studio/image"
 import { coverCrop, FULL_CROP, NO_FILTER, PRESETS, cssFilter, processImage, withDefaults, type Crop, type Filters } from "@/lib/studio/imagefx"
-import { BGS, FONTS, fontFamily, SIZES, TEMPLATES, TEMPLATE_CATS, bgCss, blank, designForAi, fitText, wrap, sanitizeDesign, shape, text, type Design, type DesignDraft, type El, type TemplateCat } from "@/lib/studio/design"
+import { BGS, FONTS, fontFamily, SIZES, bgCss, blank, designForAi, fitText, wrap, sanitizeDesign, shape, text, type Design, type DesignDraft, type El } from "@/lib/studio/design"
 import { callAi } from "@/lib/studio/ai"
 import { removeBackgroundAI, removeFlatBackground, thumbnail } from "@/lib/studio/bgremove"
 import { cn } from "@/lib/utils"
 import { createSlideSet, slideSetPage, SLIDE_SETS } from "@/lib/studio/design"
+import { DesignElement as ElView } from "@/components/studio/design-element"
+import { ToolbarPopover } from "@/components/studio/toolbar-popover"
 import { TemplateHub } from "@/components/studio/template-hub"
 const EnhancedSlideShow = dynamic(() => import("@/components/studio/presentation-viewer").then((m) => m.EnhancedSlideShow), { ssr: false })
 const LiveEmbedModal = dynamic(() => import("@/components/studio/embed-viewer").then((m) => m.LiveEmbedModal), { ssr: false })
@@ -214,7 +216,6 @@ export default function CreativePage() {
   const [guides, setGuides] = useState<Guides>({ v: [], h: [] })
   const [cropping, setCropping] = useState<El | null>(null)
   const [panel, setPanel] = useState<"edit" | "adjust">("edit")
-  const [cat, setCat] = useState<TemplateCat | "all">("all")
   const [aiPrompt, setAiPrompt] = useState("")
   const [aiSize, setAiSize] = useState("auto")
   const [aiBusy, setAiBusy] = useState<"" | "create" | "edit">("")
@@ -482,9 +483,10 @@ export default function CreativePage() {
   useEffect(() => {
     if (showNew || presenting) return
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
       const t = e.target as HTMLElement
       // Sliders/checkboxes keep focus after use; shortcuts should still work there.
-      const typing = t?.closest("textarea,select,[contenteditable]") || (t instanceof HTMLInputElement && !["range", "checkbox", "color", "button"].includes(t.type))
+      const typing = t?.closest('textarea,select,[contenteditable],[role="combobox"],[role="listbox"],[role="option"],[role="dialog"]') || (t instanceof HTMLInputElement && !["range", "checkbox", "color", "button"].includes(t.type))
       if (typing) return
       if (t instanceof HTMLInputElement && !(e.ctrlKey || e.metaKey) && e.key !== "Escape") return
       const mod = e.ctrlKey || e.metaKey
@@ -957,8 +959,8 @@ export default function CreativePage() {
         <Card className="mb-5 p-4">
           <div role="group" aria-label="Cách bắt đầu thiết kế" className="mb-5 flex flex-wrap gap-2">
             {([
-              ["slides", "Kho mẫu · 12 loại"],
-              ["single", "Mẫu lẻ & trang trống"],
+              ["slides", "Kho mẫu"],
+              ["single", "Trang trống"],
               ["ai", "Tạo bằng AI"],
               ["imagegen", "Vẽ ảnh AI (Imagen)"],
               ["import", "Nhập tệp"],
@@ -1257,43 +1259,7 @@ export default function CreativePage() {
           )}
           {libraryTab === "single" && (
           <>
-          <div className="mt-5 mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 font-medium text-slate-800">
-              <LayoutTemplate className="h-4 w-4 text-pink-500" />
-              Hoặc bắt đầu từ {TEMPLATES.length} mẫu có sẵn
-            </h3>
-            <div className="no-scrollbar flex gap-1 overflow-x-auto">
-              {(["all", ...TEMPLATE_CATS] as const).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCat(c)}
-                  className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-medium", cat === c ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
-                >
-                  {c === "all" ? "Tất cả" : c}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-            {TEMPLATES.filter((t) => cat === "all" || t.cat === cat).map((t) => (
-              <button
-                key={t.name}
-                type="button"
-                onClick={() => addDesign({ ...t.make(), id: uid(), updatedAt: Date.now() })}
-                className="group overflow-hidden rounded-2xl bg-slate-50 text-left ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-pink-300"
-              >
-                <div className="grid h-44 place-items-center p-3">
-                  <Mini d={t.make()} maxH={150} maxW={230} />
-                </div>
-                <div className="border-t border-slate-200 bg-white px-3 py-2">
-                  <div className="truncate text-sm font-medium text-slate-700">{t.name}</div>
-                  <div className="text-[11px] text-slate-400">{t.cat}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-          <h3 className="mt-5 mb-2 text-sm font-medium text-slate-700">Hoặc trang trống</h3>
+          <h3 className="mt-5 mb-3 font-medium text-slate-700">Bắt đầu từ một trang trống</h3>
           <div className="flex flex-wrap gap-2">
             {SIZES.map((s) => (
               <Button key={s.label} variant="outline" size="sm" onClick={() => addDesign(blank(s.w, s.h))}>
@@ -1527,15 +1493,9 @@ export default function CreativePage() {
                       <option value="serif">Cổ điển</option>
                     </Select>
                     <Input aria-label="Cỡ chữ" type="number" min={8} value={selected.fontSize ?? 48} onChange={(e) => updateEl(selected.id, { fontSize: Math.max(8, Number(e.target.value)) })} className="h-8 w-16" />
-                    <details key={selected.id + "-color"} className="relative">
-                      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100">
-                        <span className="h-4 w-4 rounded border border-slate-300" style={{ background: selected.color ?? "#000000" }} />
-                        Màu chữ
-                      </summary>
-                      <div className="absolute left-0 z-30 mt-1 w-40 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
-                        <ColorRow label="Chọn màu chữ" value={selected.color ?? "#000000"} onChange={(color) => updateEl(selected.id, { color }, "push")} />
-                      </div>
-                    </details>
+                    <ToolbarPopover key={selected.id + "-color"} label="Màu chữ" trigger={<><span className="h-4 w-4 rounded border border-slate-300" style={{background:selected.color??"#000000"}}/>Màu chữ</>}>
+                      <ColorRow label="Chọn màu chữ" value={selected.color??"#000000"} onChange={color=>updateEl(selected.id,{color},"push")}/>
+                    </ToolbarPopover>
 
                     <Button size="icon" variant={selected.italic ? "soft" : "ghost"} icon={Italic} aria-label="Chữ nghiêng" aria-pressed={!!selected.italic} onClick={() => updateEl(selected.id, { italic: !selected.italic }, "push")} />
                     {([["left", AlignLeft, "Căn trái"], ["center", AlignCenter, "Căn giữa"], ["right", AlignRight, "Căn phải"]] as const).map(([value, Icon, label]) => (
@@ -1548,13 +1508,9 @@ export default function CreativePage() {
                   <>
                     <Button size="icon" variant={selected.locked ? "soft" : "ghost"} icon={selected.locked ? LockKeyhole : UnlockKeyhole} aria-label={selected.locked ? "Mở khóa thành phần" : "Khóa thành phần"} onClick={() => updateEl(selected.id, { locked: !selected.locked }, "push")} />
                     <Button size="icon" variant={inspectorOpen ? "soft" : "ghost"} icon={SlidersHorizontal} aria-label="Chi tiết thành phần" title="Chi tiết thành phần" onClick={() => setInspectorOpen((v) => !v)} />
-                    <details key={selected.id} className="relative">
-                      <summary className="cursor-pointer rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">Lớp</summary>
-                      <div className="absolute right-0 z-30 mt-1 grid w-40 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                        <Button size="sm" variant="ghost" icon={BringToFront} disabled={cur.els[cur.els.length - 1]?.id === sel} onClick={() => move(1)}>Lên một lớp</Button>
-                        <Button size="sm" variant="ghost" icon={SendToBack} disabled={cur.els[0]?.id === sel} onClick={() => move(-1)}>Xuống một lớp</Button>
-                      </div>
-                    </details>
+                    <ToolbarPopover key={selected.id} label="Sắp xếp lớp" trigger="Lớp">
+                      <div className="grid gap-1"><Button size="sm" variant="ghost" icon={BringToFront} disabled={cur.els[cur.els.length-1]?.id===sel} onClick={()=>move(1)}>Lên một lớp</Button><Button size="sm" variant="ghost" icon={SendToBack} disabled={cur.els[0]?.id===sel} onClick={()=>move(-1)}>Xuống một lớp</Button></div>
+                    </ToolbarPopover>
                     <Button size="icon" variant="ghost" icon={CopyPlus} aria-label="Nhân bản" title="Nhân bản (Ctrl+D)" onClick={duplicateSel} />
                     <Button size="icon" variant="danger" icon={Trash2} aria-label="Xóa thành phần" title="Xóa thành phần" onClick={removeSel} />
                   </>
@@ -1579,7 +1535,7 @@ export default function CreativePage() {
                             setSel(selected.id)
                             requestAnimationFrame(() => {
                               const field = textEditor.current?.querySelector("textarea")
-                              field?.focus()
+                              field?.focus({ preventScroll: true })
                               field?.select()
                             })
                           }
@@ -1919,72 +1875,6 @@ export default function CreativePage() {
 
 /* ---------- Element view ---------- */
 
-const ElView = memo(function ElView({ el, scale }: { el: El; scale: number }) {
-  const base: React.CSSProperties = { width: "100%", height: "100%", opacity: el.opacity }
-  const boxShadow = el.shadow ? `0 ${10 * scale}px ${30 * scale}px rgba(0,0,0,0.35)` : undefined
-  if (el.type === "rect") return <div style={{ ...base, background: el.fill, borderRadius: (el.radius ?? 0) * scale, boxShadow }} />
-  if (el.type === "circle") return <div style={{ ...base, background: el.fill, borderRadius: "50%", boxShadow }} />
-  if (el.type === "image") {
-    const c = el.crop ?? FULL_CROP
-    const f = withDefaults(el.filters)
-    return (
-      <div
-        style={{
-          ...base,
-          position: "relative",
-          overflow: el.cutout ? "visible" : "hidden",
-          borderRadius: el.cutout ? 0 : (el.radius ?? 0) * scale,
-          boxShadow: el.cutout ? undefined : boxShadow,
-          filter: el.cutout && el.shadow ? `drop-shadow(0 ${10 * scale}px ${15 * scale}px rgba(0,0,0,0.35))` : undefined,
-        }}
-      >
-        <div style={{ position: "absolute", inset: 0, transform: el.flipX || el.flipY ? `scale(${el.flipX ? -1 : 1}, ${el.flipY ? -1 : 1})` : undefined }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={el.src}
-            loading="lazy"
-            decoding="async"
-            alt=""
-            draggable={false}
-            style={{
-              position: "absolute",
-              maxWidth: "none",
-              width: `${100 / c.w}%`,
-              height: `${100 / c.h}%`,
-              left: `${(-c.x / c.w) * 100}%`,
-              top: `${(-c.y / c.h) * 100}%`,
-              filter: cssFilter(f, f.blur * scale),
-              pointerEvents: "none",
-            }}
-          />
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div
-      style={{
-        ...base,
-        color: el.color,
-        fontSize: (el.fontSize ?? 48) * scale,
-        fontWeight: el.weight,
-        fontStyle: el.italic ? "italic" : undefined,
-        fontFamily: fontFamily(el),
-        letterSpacing: (el.letterSpacing ?? 0) * scale,
-        textAlign: el.align,
-        lineHeight: el.lineHeight ?? 1.25,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: el.verticalAlign === "middle" ? "center" : el.verticalAlign === "bottom" ? "flex-end" : "flex-start",
-        whiteSpace: "pre-wrap",
-        overflowWrap: "break-word",
-        textShadow: el.shadow ? `0 ${3 * scale}px ${12 * scale}px rgba(0,0,0,0.35)` : undefined,
-      }}
-    >
-      {el.text}
-    </div>
-  )
-})
 
 const Mini = memo(function Mini({ d, maxW, maxH }: { d: Omit<Design, "id" | "updatedAt">; maxW: number; maxH: number }) {
   const s = Math.min(maxW / d.w, maxH / d.h)

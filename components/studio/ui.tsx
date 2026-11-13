@@ -3,9 +3,10 @@
 import type { LucideIcon } from "lucide-react"
 import { CircleHelp, Info, LoaderCircle, X } from "lucide-react"
 import type React from "react"
+import { useEffect, useState } from "react"
+import * as Dialog from "@radix-ui/react-dialog"
 import { cn } from "@/lib/utils"
 import { useAiStatus } from "@/lib/studio/ai"
-import { useStored } from "@/lib/studio/storage"
 
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "soft" | "outline" | "ghost" | "danger"
@@ -28,8 +29,9 @@ export function Button({
     <button
       type="button"
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-xl font-medium leading-snug transition focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "studio-button relative inline-flex shrink-0 items-center justify-center rounded-xl font-medium leading-snug transition focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         {
           primary:
             "bg-violet-600 text-white shadow-sm hover:bg-violet-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none disabled:opacity-100",
@@ -48,12 +50,19 @@ export function Button({
       )}
       {...p}
     >
-      {loading ? (
-        <LoaderCircle className="h-4 w-4 animate-spin" />
-      ) : Icon ? (
-        <Icon className="h-4 w-4" />
-      ) : null}
-      {children}
+      <span
+        className="studio-button-content"
+        style={{ opacity: loading ? 0 : 1 }}
+      >
+        {Icon && <Icon className="h-4 w-4" />}
+        {children}
+      </span>
+      {loading && (
+        <LoaderCircle
+          aria-hidden="true"
+          className="absolute h-4 w-4 animate-spin"
+        />
+      )}
     </button>
   )
 }
@@ -134,11 +143,9 @@ export function PageHeader({
   /** Optional instructions, opened on request. */
   guide?: GuideSpec
 }) {
-  const [open, setOpen, loaded] = useStored(
-    `bloom.guide.${guide?.id ?? "none"}`,
-    false,
-  )
-  const showGuide = !!guide && loaded && open
+  const [open, setOpen] = useState(false)
+  const [portal, setPortal] = useState<HTMLElement | null>(null)
+  useEffect(() => setPortal(document.getElementById("studio-overlays")), [])
   return (
     <div className="mb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -160,9 +167,9 @@ export function PageHeader({
             </p>
           </div>
         </div>
-        {(actions || (guide && loaded && !open)) && (
+        {(actions || guide) && (
           <div className="flex flex-wrap gap-2">
-            {guide && loaded && !open && (
+            {guide && (
               <Button
                 aria-label="Cách dùng"
                 className="max-sm:w-9 max-sm:px-0"
@@ -177,48 +184,57 @@ export function PageHeader({
           </div>
         )}
       </div>
-      {showGuide && (
-        <div className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-violet-100">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-              <CircleHelp className="h-4 w-4 text-violet-500" />
-              Cách dùng
-            </h2>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            >
-              Đã hiểu, ẩn đi
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <ol
-            className={cn(
-              "grid gap-3",
-              guide!.steps.length >= 4
-                ? "sm:grid-cols-2 xl:grid-cols-4"
-                : "sm:grid-cols-3",
-            )}
-          >
-            {guide!.steps.map((s, i) => (
-              <li
-                key={i}
-                className="flex gap-2.5 text-sm leading-relaxed text-slate-600"
+      {guide && (
+        <Dialog.Root open={open} onOpenChange={setOpen}>
+          <Dialog.Portal container={portal}>
+            <Dialog.Overlay className="studio-dialog-overlay" />
+            <Dialog.Content className="studio-guide-dialog">
+              <Dialog.Title className="sr-only">Cách dùng {title}</Dialog.Title>
+              <Dialog.Description className="sr-only">
+                Các bước gợi ý, mở khi bạn cần.
+              </Dialog.Description>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <CircleHelp className="h-4 w-4 text-violet-500" />
+                  Cách dùng
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                >
+                  Đã hiểu, ẩn đi
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ol
+                className={cn(
+                  "grid gap-3",
+                  guide!.steps.length >= 4
+                    ? "sm:grid-cols-2 xl:grid-cols-4"
+                    : "sm:grid-cols-3",
+                )}
               >
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-xs font-semibold text-white">
-                  {i + 1}
-                </span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ol>
-          {guide!.tip && (
-            <p className="mt-3 rounded-xl bg-violet-50 px-3 py-2 text-xs leading-relaxed text-violet-800">
-              {guide!.tip}
-            </p>
-          )}
-        </div>
+                {guide!.steps.map((s, i) => (
+                  <li
+                    key={i}
+                    className="flex gap-2.5 text-sm leading-relaxed text-slate-600"
+                  >
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-xs font-semibold text-white">
+                      {i + 1}
+                    </span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ol>
+              {guide!.tip && (
+                <p className="mt-3 rounded-xl bg-violet-50 px-3 py-2 text-xs leading-relaxed text-violet-800">
+                  {guide!.tip}
+                </p>
+              )}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       )}
     </div>
   )

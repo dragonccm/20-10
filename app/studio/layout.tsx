@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import type React from "react"
 import { Toaster } from "sonner"
 import { Companion } from "@/components/studio/companion"
+import { StudioViewport } from "@/components/studio/viewport"
 import { StudioNav } from "@/components/studio/nav"
 
 const studioFont = localFont({
@@ -31,11 +32,8 @@ export default function StudioLayout({
       <div className="contents studio-navigation">
         <StudioNav />
       </div>
-      <main id="studio-scroll" className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1760px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 2xl:px-10">
-          {children}
-        </div>
-      </main>
+      <StudioViewport>{children}</StudioViewport>
+      <div id="studio-overlays" className="studio-overlays" />
       <Companion />
       <Toaster position="bottom-center" richColors closeButton />
     </div>

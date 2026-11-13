@@ -754,7 +754,7 @@ function ThemePicker({
   const [open, setOpen] = useState(false)
   const [portal, setPortal] = useState<HTMLElement | null>(null)
   useEffect(
-    () => setPortal(document.querySelector<HTMLElement>(".studio-ui")),
+    () => setPortal(document.getElementById("studio-overlays")),
     [],
   )
   const [prompt, setPrompt] = useState("")

@@ -1,5 +1,7 @@
 import { shape, text, type El } from "./design"
 import type { BloomTemplate } from "./bloom-templates"
+import { templateArt } from "./template-art"
+import { coverCrop } from "./imagefx"
 import { uid } from "./storage"
 
 export const SCENE_NAMES = {
@@ -19,16 +21,15 @@ export function nativeScene(meta: BloomTemplate, page: number): El[] {
  const T=(value:string,x:number,y:number,w:number,fs=30,color=k,extra:Partial<El>={})=>{
   // Conservative line estimate keeps long Vietnamese labels inside their editable box.
   const lines=value.split("\n").reduce((n,line)=>n+Math.max(1,Math.ceil(line.length*fs*.56/w)),0)
-  els.push(text({x:x*scale,y:y*scale,w:w*scale,h:Math.ceil(lines*fs*1.2)*scale,text:value,fontSize:fs*scale,color,weight:400,lineHeight:1.15,...extra}))
+  els.push(text({x:x*scale,y:y*scale,w:w*scale,h:Math.ceil(lines*fs*(fs>200?1.34:1.2))*scale,text:value,fontSize:fs*scale,color,weight:400,lineHeight:1.15,...extra}))
  }
  const L=(x1:number,y1:number,x2:number,y2:number,color=a,thickness=2)=>{
   const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)
   R((x1+x2-len)/2,(y1+y2)/2,len,thickness,color,{rot:Math.atan2(dy,dx)*180/Math.PI})
  }
  const photo=(x:number,y:number,w:number,h:number,seed=0,rot=0)=>{
-  const colors=["#c2d6cf","#dfbfb1","#b8cadd","#d6c9ae","#cfc1df"]
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800"><rect width="800" height="800" fill="${colors[(index+seed)%5]}"/><circle cx="${180+seed*73%430}" cy="${140+seed*31%160}" r="${70+seed*11%90}" fill="${p}"/><path d="M0 800V${530+seed*17%110}L${210+seed*33%150} ${300+seed*47%150} 580 660 800 420V800Z" fill="${a}" opacity=".7"/><path d="M0 800 200 610 430 730 800 540V800" fill="${k}" opacity=".35"/><text x="400" y="756" text-anchor="middle" font-family="Arial" font-size="23" fill="white">ẢNH CỦA BẠN · ${seed+1}</text></svg>`
-  els.push({id:uid(),type:"image",x:x*scale,y:y*scale,w:w*scale,h:h*scale,opacity:1,rot,nw:800,nh:800,src:`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`})
+  const svg=templateArt(index+seed,a,p,k)
+  els.push({id:uid(),type:"image",x:x*scale,y:y*scale,w:w*scale,h:h*scale,opacity:1,rot,nw:800,nh:800,crop:coverCrop(800,800,w,h),src:`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`})
  }
  const tag=(value:string,x:number,y:number,w=220)=>{R(x,y,w,36,a);T(value,x+12,y+8,w-24,15,"#ffffff",{weight:700})}
  const card=(title:string,body:string,x:number,y:number,w:number,h:number,filled=false)=>{
@@ -37,7 +38,7 @@ export function nativeScene(meta: BloomTemplate, page: number): El[] {
   T(title,x+18,y+18,w-36,fs,filled?"#ffffff":a,{weight:700})
   if(body&&h>titleHeight+85)T(body,x+18,y+30+titleHeight,w-36,19,filled?"#ffffff":k)
  }
- const title=(value=meta.name,x=64,y=70,w=950,fs=62,color=k)=>T(value,x,y,w,fs,color,{font:"serif",weight:700})
+ const title=(value=meta.name,x=64,y=70,w=950,fs=62,color=k)=>T(value,x,y,w,fs,color,{font:[0,4,8,9,13,14,19].includes(index)?"serif":"sans",weight:600})
  const foot=(label="BLOOM ORIGINAL · THÊM NỘI DUNG CỦA BẠN")=>T(label,60,H-40,960,14,a,{letterSpacing:scale})
 
  if(meta.category==="presentations") {
@@ -56,8 +57,8 @@ export function nativeScene(meta: BloomTemplate, page: number): El[] {
   if(page===0) {
    const name=meta.name
    switch(index) {
-    case 0: T("RESEARCH JOURNAL / 01",60,48,800,17,a);L(60,92,1020,92);title(name,60,145,690,90);T("Câu hỏi · Phương pháp · Khám phá",65,400,650,25);R(830,135,180,345,a);T("Aa",851,216,150,95,p,{font:"serif"});T("TÊN TÁC GIẢ / ĐƠN VỊ",60,520,750,17,a);break
-    case 1: R(0,0,1080,H,k);for(let x=45;x<1080;x+=65)L(x,0,x,H,p,.6);for(let y=30;y<H;y+=65)L(0,y,1080,y,p,.6);R(75,96,690,375,p);title(name,110,135,600,80);T("Ý tưởng → Bản thiết kế → Tác động",110,385,590,24,a);C(830,320,135,a);T("01",854,352,100,50,p);break
+    case 0: T("RESEARCH JOURNAL / 01",60,48,800,17,a);L(60,92,1020,92);title(name,60,145,690,90);T("Câu hỏi · Phương pháp · Khám phá",65,400,650,25);photo(765,120,260,355,8);T("TÊN TÁC GIẢ / ĐƠN VỊ",60,520,750,17,a);break
+    case 1: R(0,0,1080,H,k);for(let x=45;x<1080;x+=90)L(x,0,x,H,p,.35);for(let y=30;y<H;y+=90)L(0,y,1080,y,p,.35);R(75,96,690,375,p);title(name,110,135,600,80);T("Ý tưởng → Bản thiết kế → Tác động",110,385,590,24,a);C(830,320,135,a);T("01",854,352,100,50,p);break
     case 2: title(name,50,45,960,62);photo(50,170,470,300,0);photo(540,170,260,300,1);photo(820,170,210,300,2);T("SELECTED WORKS / 2026",50,505,960,21,a);break
     case 3: R(0,0,1080,H,a);T("PITCH / 2026",55,42,900,18,p);title(name,55,125,550,75,p);T("Một cơ hội. Một hướng đi mới.",55,367,520,26,p);[125,215,300].forEach((height,i)=>{R(700+i*100,480-height,62,height,p);T(["01","02","03"][i],700+i*100,500,80,20,p)});break
     case 4: T("CHÚNG TÔI TIN VÀO",65,45,960,18,a);title(name.toUpperCase(),65,140,850,105);R(65,440,950,80,k);T("Ý NGHĨA TẠO NÊN SỰ KHÁC BIỆT.",90,463,880,27,p,{weight:700});break
