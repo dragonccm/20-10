@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronLeft, LayoutGrid, Sprout } from "lucide-react"
+import { ChevronLeft, LayoutGrid } from "lucide-react"
+import { BloomMark, BloomWordmark } from "./brand"
 import { cn } from "@/lib/utils"
 import { TOOLS } from "@/lib/studio/tools"
 
@@ -16,12 +17,10 @@ export function StudioNav() {
     <>
       {/* Desktop sidebar */}
       <aside className="hidden w-[76px] shrink-0 flex-col border-r border-white/70 bg-white/50 px-3 py-5 backdrop-blur lg:flex xl:w-60">
-        <Link href="/studio" className="mb-6 flex items-center justify-center gap-2 px-1 xl:justify-start xl:px-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-600 text-white">
-            <Sprout className="h-5 w-5" />
-          </span>
+        <Link href="/studio" aria-label="Bloom · Một góc nhỏ của bạn" className="mb-6 flex items-center justify-center gap-2 px-1 xl:justify-start xl:px-2">
+          <BloomMark size={36} />
           <span className="hidden leading-tight xl:block">
-            <span className="block font-semibold text-slate-800">Bloom</span>
+            <BloomWordmark />
             <span className="block text-xs text-slate-500">Một góc nhỏ của bạn</span>
           </span>
         </Link>
@@ -54,8 +53,9 @@ export function StudioNav() {
           <a href="/" aria-label="Về trang chọn" className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
             <ChevronLeft className="h-5 w-5" />
           </a>
-          <Sprout className="h-5 w-5 text-violet-600" />
-          <span className="font-semibold text-slate-800">Bloom Workspace</span>
+          <BloomMark size={28} />
+          <BloomWordmark />
+          <span className="text-sm text-slate-500">Workspace</span>
         </div>
         <nav aria-label="Công cụ Studio" className="flex gap-1 overflow-x-auto px-4 py-2 sm:flex-wrap">
           {items.map((t) => (

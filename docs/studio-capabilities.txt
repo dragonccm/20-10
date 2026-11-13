@@ -123,3 +123,8 @@ this task. Tone preferences (natural, brief, direct) are explicitly honored.
 Bloom remains transparent about being AI and never claims to be the gift giver.
 Chat/help permissions remain unchanged; generated documents follow their own
 requested register rather than inheriting conversational slang or humor.
+
+Bloom identity update (2026-11-13):
+Original sprout mark and outlined Plus Jakarta Sans wordmark, SVG and PNG exports
+in public/brand. Navigation and companion share the same mark. Next.js serves
+SVG favicon, multi-size ICO fallback and 180px Apple touch icon automatically.
