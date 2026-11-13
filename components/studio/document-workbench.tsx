@@ -301,7 +301,7 @@ export function DocumentWorkbench({ doc, update }: Props) {
             Word.
           </p>
         )}
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="document-quick-actions mt-3 flex flex-wrap gap-2">
           <Button
             disabled={!!busy || !chunks.length}
             onClick={() =>

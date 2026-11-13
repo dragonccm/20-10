@@ -128,3 +128,15 @@ Bloom identity update (2026-11-13):
 Original sprout mark and outlined Plus Jakarta Sans wordmark, SVG and PNG exports
 in public/brand. Navigation and companion share the same mark. Next.js serves
 SVG favicon, multi-size ICO fallback and 180px Apple touch icon automatically.
+
+Mobile workspace update (2026-11-13):
+Below 1024px the desktop sidebar is replaced by a compact brand header and five
+bottom destinations: Home, Documents, Bloom, Writing and More. More opens an
+accessible, scrollable bottom sheet with every existing tool. The standalone
+floating companion launcher is hidden on mobile; the dock opens the same chat.
+Below 641px home uses six compact two-column cards with shorter labels. Existing
+desktop copy is retained. Touch targets and form sizes are increased, the writing
+format toolbar scrolls independently, document quick actions use a two-column
+grid, and CV import controls wrap onto readable rows. Safe-area viewport metadata
+and bottom spacing keep content above the dock. Chat tracks visual viewport size
+and restores focus to its opener after closing. Reduced-motion settings are honored.

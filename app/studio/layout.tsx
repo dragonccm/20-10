@@ -5,6 +5,7 @@ import { Toaster } from "sonner"
 import { Companion } from "@/components/studio/companion"
 import { StudioViewport } from "@/components/studio/viewport"
 import { StudioNav } from "@/components/studio/nav"
+import "./mobile.css"
 
 const studioFont = localFont({
   src: "./fonts/plus-jakarta-sans.woff2",

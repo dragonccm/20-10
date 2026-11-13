@@ -515,7 +515,7 @@ export default function WritingPage() {
             </Card>
 
             <Card className="overflow-hidden">
-              <div className="flex flex-wrap gap-0.5 border-b border-slate-100 bg-slate-50/70 p-1.5">
+              <div className="writing-format-toolbar flex flex-wrap gap-0.5 border-b border-slate-100 bg-slate-50/70 p-1.5">
                 {(
                   [
                     [Bold, "Đậm", () => exec("bold")],

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { X, Send, Settings2, Square, ArrowUpRight } from "lucide-react"
 import { BloomMark } from "./brand"
 import { usePathname, useRouter } from "next/navigation"
@@ -14,14 +14,30 @@ type Message={id:number;role:"user"|"assistant";text:string;proposal?:CompanionR
 export function Companion(){
  const path=usePathname(),router=useRouter(),[open,setOpen]=useState(false),[mode,setMode]=useState<"chat"|"help">("chat"),[messages,setMessages]=useState<Message[]>([]),[text,setText]=useState(""),[busy,setBusy]=useState(false),[settings,setSettings]=useState(false),[tone,setTone]=useState("gentle"),[remember,setRemember]=useState(false),[loaded,setLoaded]=useState(false),[allowOnce,setAllowOnce]=useState(false)
  const abort=useRef<AbortController|null>(null),permission=useRef(false),panel=useRef<HTMLDivElement>(null),launcher=useRef<HTMLButtonElement>(null),input=useRef<HTMLTextAreaElement>(null),bottom=useRef<HTMLDivElement>(null),sequence=useRef(0)
+ const opener=useRef<HTMLElement|null>(null)
+ const [available,setAvailable]=useState<{height:number;top:number}|null>(null)
  useEffect(()=>{const saved=readLS<{remember?:boolean;tone?:string}>("bloom.companion.settings",{});setRemember(!!saved.remember);setTone(saved.tone||"gentle");if(saved.remember)setMessages(readLS<Message[]>("bloom.companion.history",[]).slice(-30));setLoaded(true);return()=>abort.current?.abort()},[])
  useEffect(()=>{if(!loaded)return;writeLS("bloom.companion.settings",{remember,tone});if(remember)writeLS("bloom.companion.history",messages.slice(-30));else try{localStorage.removeItem("bloom.companion.history")}catch{}},[messages,remember,tone,loaded])
  useEffect(()=>{if(open)input.current?.focus()},[open])
+ useEffect(()=>{
+  if(!open)return
+  const view=window.visualViewport
+  const update=()=>setAvailable({height:view?.height??window.innerHeight,top:view?.offsetTop??0})
+  update();view?.addEventListener("resize",update);view?.addEventListener("scroll",update);window.addEventListener("resize",update)
+  return()=>{view?.removeEventListener("resize",update);view?.removeEventListener("scroll",update);window.removeEventListener("resize",update)}
+ },[open])
  useEffect(()=>{bottom.current?.scrollIntoView({block:"nearest"})},[messages,busy])
- useEffect(()=>{const reveal=()=>setOpen(true);window.addEventListener("bloom:companion",reveal);return()=>window.removeEventListener("bloom:companion",reveal)},[])
+ useEffect(()=>{const reveal=()=>{opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null;setOpen(true)};window.addEventListener("bloom:companion",reveal);return()=>window.removeEventListener("bloom:companion",reveal)},[])
  const revoke=()=>{permission.current=false;setAllowOnce(false)}
  const cancel=()=>{sequence.current++;abort.current?.abort();setBusy(false);revoke()}
- const close=()=>{cancel();setOpen(false);launcher.current?.focus()}
+ const close=()=>{
+  cancel();setOpen(false)
+  const previous=opener.current
+  const mobileTrigger=document.querySelector<HTMLButtonElement>("[data-mobile-companion-trigger]")
+  const target=previous?.isConnected&&previous!==document.body&&previous.getClientRects().length
+   ?previous:mobileTrigger?.getClientRects().length?mobileTrigger:launcher.current
+  target?.focus()
+ }
  const create=(id:number,draft:{title:string;text:string})=>{
   const docId=sendToWriting(draft.title,{text:draft.text,kind:"other",lang:"vi"})
   window.dispatchEvent(new CustomEvent("bloom:draft-created",{detail:{id:docId}}))
@@ -52,8 +68,8 @@ export function Companion(){
    if(canCreate&&permission.current&&requestedMode==="help"&&proposal.draft){try{create(replyId,proposal.draft)}catch(e){toast.error((e as Error).message)}}
   }catch(e){if(turn===sequence.current&&!abort.current?.signal.aborted){setText(latest);toast.error((e as Error).message)}}finally{if(turn===sequence.current){setBusy(false);revoke()}}
  }
- return <><button ref={launcher} className="companion-launcher" aria-label="Mở trợ lý Bloom" aria-expanded={open} onClick={()=>open?close():setOpen(true)}><BloomMark size={24}/><span>Trò chuyện cùng Bloom</span></button>
- {open&&<><div className="companion-backdrop" onClick={close} aria-hidden="true"/><div className="companion-panel" ref={panel} role="dialog" aria-modal="true" aria-labelledby="companion-title" onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();close()}if(e.key==="Tab"){const all=Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]),textarea,input,select,a[href]')||[]);const first=all[0],last=all.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}}}>
+ return <><button ref={launcher} className="companion-launcher" aria-label="Mở trợ lý Bloom" aria-expanded={open} onClick={()=>{if(open)close();else{opener.current=launcher.current;setOpen(true)}}}><BloomMark size={24}/><span>Trò chuyện cùng Bloom</span></button>
+ {open&&<><div className="companion-backdrop" onClick={close} aria-hidden="true"/><div className="companion-panel" style={available?{"--companion-available-height":`${available.height}px`,"--companion-top":`${available.top}px`} as CSSProperties:undefined} ref={panel} role="dialog" aria-modal="true" aria-labelledby="companion-title" onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();close()}if(e.key==="Tab"){const all=Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]),textarea,input,select,a[href]')||[]);const first=all[0],last=all.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}}}>
  <header><BloomMark size={32}/><div><strong id="companion-title">Bloom ở đây</strong><small>Trợ lý AI · Bạn chọn cách mình giúp</small></div><button aria-label="Tùy chọn trợ lý" aria-expanded={settings} onClick={()=>setSettings(v=>!v)}><Settings2 size={17}/></button><button aria-label="Đóng trò chuyện" onClick={close}><X size={19}/></button></header>
  {settings&&<div className="companion-settings"><label>Cách trả lời<select value={tone} onChange={e=>setTone(e.target.value)}><option value="gentle">Nhẹ nhàng, tự nhiên</option><option value="brief">Ngắn gọn</option><option value="direct">Đi thẳng vào việc</option></select></label><label><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/> Giữ cuộc trò chuyện trên thiết bị này</label><p>Mặc định chỉ giữ trong lần mở trang này. Mỗi lần gửi, lời nhắn và một phần hội thoại gần đây được chuyển đến dịch vụ AI. Mình không tự đọc các tài liệu bạn đã lưu.</p><button onClick={()=>{cancel();setMessages([])}}>Bắt đầu cuộc trò chuyện mới</button></div>}
  <div className="companion-modes" aria-label="Cách trợ lý giúp"><button aria-pressed={mode==="chat"} onClick={()=>{cancel();setMode("chat")}}>Chỉ trò chuyện</button><button aria-pressed={mode==="help"} onClick={()=>{cancel();setMode("help")}}>Nhờ làm một việc</button></div>

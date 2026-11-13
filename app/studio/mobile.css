@@ -1,0 +1,548 @@
+/* Mobile shell: thumb-friendly destinations, with the full workspace one tap away. */
+.studio-mobile-header,
+.studio-mobile-dock {
+  display: none;
+}
+.bloom-mobile-copy {
+  display: none;
+}
+.bloom-greeting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 1023px) {
+  .studio-ui .studio-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-shrink: 0;
+    padding: calc(12px + env(safe-area-inset-top)) 20px 12px;
+    background: #f6f7fbf5;
+    border-bottom: 1px solid #ececf3;
+    min-height: 70px;
+  }
+  .studio-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+  }
+  .studio-mobile-brand > span {
+    display: block;
+  }
+  .studio-mobile-brand small {
+    display: block;
+    color: #8a899c;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .studio-mobile-utility {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #e8e5f1;
+    background: #fff;
+    border-radius: 14px;
+    color: #72618c;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .studio-mobile-utility[aria-current="page"] {
+    background: #f0e9fd;
+    border-color: #ddcef5;
+    color: #7543c4;
+  }
+  .studio-ui .studio-mobile-dock {
+    position: fixed;
+    z-index: 40;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px max(10px, env(safe-area-inset-right))
+      calc(7px + env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+    background: #ffffffed;
+    border-top: 1px solid #e9e7f0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -5px 24px #56427008;
+    backdrop-filter: blur(18px);
+  }
+  .studio-mobile-dock > a,
+  .studio-mobile-dock > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: 56px;
+    border-radius: 14px;
+    color: #9290a2;
+    font-size: 11px;
+    font-weight: 500;
+    transition:
+      background 0.16s,
+      color 0.16s;
+  }
+  .studio-mobile-dock [aria-current="page"],
+  .studio-mobile-dock .is-current,
+  .studio-mobile-dock [data-state="open"] {
+    background: #f1ebfc;
+    color: #8050c6;
+  }
+  .studio-mobile-dock .studio-mobile-chat {
+    color: #8057b8;
+  }
+  .studio-mobile-dock > a:active,
+  .studio-mobile-dock > button:active {
+    background: #eee8f8;
+  }
+  .studio-ui .studio-viewport {
+    scrollbar-gutter: auto;
+    scrollbar-width: thin;
+  }
+  .studio-ui .studio-viewport > div {
+    padding: 18px 16px calc(98px + env(safe-area-inset-bottom));
+  }
+  .studio-ui .companion-launcher {
+    display: none;
+  }
+  .studio-ui .companion-panel {
+    left: 0;
+    right: 0;
+    bottom: auto;
+    top: calc(var(--companion-top, 0px) + env(safe-area-inset-top));
+    width: 100%;
+    height: calc(
+      var(--companion-available-height, 100dvh) - env(safe-area-inset-top)
+    );
+    border-radius: 22px 22px 0 0;
+  }
+  .studio-ui .companion-panel header {
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+  .studio-ui .companion-panel header button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+  }
+  .studio-ui .companion-panel form {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .studio-ui .companion-panel textarea {
+    font-size: 16px;
+  }
+  .studio-ui .companion-panel form button {
+    min-height: 44px;
+    min-width: 68px;
+  }
+  .studio-ui .companion-empty {
+    padding-top: 30px;
+  }
+  .studio-ui .companion-modes button {
+    min-height: 44px;
+    flex: 1;
+  }
+  .studio-mobile-header a:focus-visible,
+  .studio-mobile-dock :focus-visible {
+    outline: 2px solid #9f7bd7;
+    outline-offset: 2px;
+  }
+}
+
+.studio-mobile-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: #30243c48;
+  backdrop-filter: blur(3px);
+  animation: studio-sheet-fade 0.18s ease-out;
+}
+.studio-mobile-sheet {
+  scrollbar-width: thin;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: min(86dvh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  background: #faf9fe;
+  border: 1px solid #fff;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -20px 70px #30243c16;
+  outline: none;
+  animation: studio-sheet-enter 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.studio-sheet-handle {
+  display: block;
+  height: 4px;
+  width: 36px;
+  border-radius: 10px;
+  background: #ded9e8;
+  margin: 0 auto 16px;
+}
+.studio-mobile-sheet header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.studio-mobile-sheet h2 {
+  color: #493d59;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.studio-mobile-sheet header p {
+  margin-top: 5px;
+  color: #92859e;
+  font-size: 12px;
+}
+.studio-sheet-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e9e5f0;
+  background: white;
+  border-radius: 50%;
+  color: #82728d;
+}
+.studio-mobile-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.studio-mobile-tools a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #eeebf5;
+  border-radius: 16px;
+  color: #61546e;
+  font-size: 13px;
+}
+.studio-mobile-tools a > span:nth-child(2) {
+  flex: 1;
+}
+.studio-mobile-tools a > svg {
+  color: #b0a4bc;
+}
+.studio-mobile-tool-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.studio-mobile-tools a[aria-current="page"] {
+  border-color: #cbb5ec;
+  background: #f4eefd;
+}
+.studio-sheet-home {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #91849b;
+}
+.studio-mobile-sheet a:focus-visible,
+.studio-mobile-sheet button:focus-visible {
+  outline: 2px solid #9f7bd7;
+  outline-offset: 2px;
+}
+@keyframes studio-sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes studio-sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .studio-ui .bloom-mobile-copy {
+    display: inline;
+  }
+  .studio-ui .bloom-wide-copy {
+    display: none;
+  }
+  .studio-ui .bloom-greeting {
+    padding: 22px 18px 20px;
+    border-radius: 24px;
+  }
+  .studio-ui .bloom-overline {
+    font-size: 9px;
+    letter-spacing: 1.3px;
+  }
+  .studio-ui .bloom-greeting h1 {
+    font-size: clamp(22px, 6vw, 27px);
+    line-height: 1.3;
+    margin: 12px 0 8px;
+    letter-spacing: -0.8px;
+    max-width: 280px;
+  }
+  .studio-ui .bloom-intro {
+    font-size: 12px;
+    color: #89808f;
+  }
+  .studio-ui .bloom-greeting-art {
+    right: -12px;
+    top: 14px;
+    opacity: 0.22;
+  }
+  .studio-ui .bloom-greeting-actions {
+    margin-top: 18px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .studio-ui .bloom-help-button {
+    margin: 0;
+    min-height: 44px;
+    padding: 10px 11px;
+    gap: 6px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+  .studio-ui .bloom-help-button:first-child {
+    background: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+    box-shadow: 0 4px 12px #8b5cf624;
+  }
+  .studio-ui .bloom-help-button:last-child {
+    flex: 1;
+    justify-content: center;
+  }
+  .studio-ui .bloom-help-button:last-child > svg:first-child {
+    display: none;
+  }
+  .studio-ui .bloom-little-helps {
+    margin: 24px 0 18px;
+  }
+  .studio-ui .bloom-section-label {
+    margin: 0 3px 12px;
+    align-items: center;
+  }
+  .studio-ui .bloom-section-label h2 {
+    font-size: 13px;
+    color: #897b96;
+  }
+  .studio-ui .bloom-section-label button {
+    min-height: 44px;
+  }
+  .studio-ui .bloom-help-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .studio-ui .bloom-help-card {
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px 14px 14px;
+    border-radius: 20px;
+    background: #fff;
+    border-color: #efecf5;
+    box-shadow: 0 3px 12px #4e396904;
+  }
+  .studio-ui .bloom-task-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+  .studio-ui .bloom-task-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+  .studio-ui .bloom-help-card h3 {
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 0;
+    color: #5a4e65;
+  }
+  .studio-ui .bloom-help-card p {
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 4px;
+    color: #83758f;
+  }
+  .studio-ui .bloom-card-arrow {
+    top: 17px;
+    right: 13px;
+    width: 14px;
+    height: 14px;
+    color: #c3b7cf;
+  }
+  .studio-ui .bloom-directions {
+    padding: 16px;
+    border-radius: 18px;
+  }
+  .studio-ui .bloom-directions > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-ui .bloom-directions button {
+    min-height: 44px;
+    text-align: left;
+  }
+  .studio-ui .bloom-drawer {
+    padding: 0 15px;
+    border: 1px solid #eae5f2;
+    border-radius: 15px;
+    background: #ffffffa6;
+  }
+  .studio-ui .bloom-drawer summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    font-size: 12px;
+    color: #887494;
+    list-style: none;
+  }
+  .studio-ui .bloom-drawer summary::after {
+    content: "+";
+    margin-left: auto;
+    font-size: 20px;
+    font-weight: 400;
+    color: #b1a1bf;
+  }
+  .studio-ui .bloom-drawer[open] summary::after {
+    content: "−";
+  }
+  .studio-ui .bloom-desktop-tools {
+    display: none;
+  }
+  .studio-ui .bloom-welcome-footer {
+    padding: 18px 4px 0;
+  }
+  .studio-ui .bloom-welcome-footer > svg {
+    display: none;
+  }
+  .studio-ui .bloom-welcome-footer > p {
+    font-size: 11px;
+    margin-top: 0;
+    color: #a69aaf;
+  }
+  .studio-ui .bloom-welcome-footer details {
+    margin-top: 8px;
+  }
+  .studio-ui .bloom-welcome-footer summary {
+    min-height: 36px;
+  }
+  .studio-ui .studio-button {
+    min-height: 44px;
+  }
+  .studio-ui .studio-select-trigger {
+    min-height: 44px;
+  }
+  .studio-ui
+    input:not([type="range"]):not([type="color"]):not([type="checkbox"]):not(
+      [type="radio"]
+    ),
+  .studio-ui textarea,
+  .studio-ui select {
+    font-size: 16px;
+  }
+  .studio-ui .studio-task-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 7px;
+    padding: 2px 1px 6px;
+    scrollbar-width: none;
+  }
+  .studio-ui .studio-task-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-mobile-sheet,
+  .studio-mobile-sheet-overlay {
+    animation: none;
+  }
+  .studio-mobile-dock > a,
+  .studio-mobile-dock > button {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .studio-ui .document-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .studio-ui [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  .studio-ui .writing-format-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    gap: 3px;
+  }
+  .studio-ui .writing-format-toolbar button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .studio-ui .cv-import-card > div {
+    flex-basis: calc(100% - 40px);
+  }
+  .studio-ui .cv-import-card > .studio-button {
+    flex: 1;
+  }
+  .studio-ui .studio-select-item {
+    min-height: 44px;
+  }
+}
+@media (max-width: 1023px) {
+  .studio-ui .companion-messages {
+    min-height: 0;
+  }
+  .studio-ui .companion-settings {
+    max-height: clamp(
+      60px,
+      calc(var(--companion-available-height, 100dvh) - 370px),
+      220px
+    );
+  }
+  .studio-ui .creative-editor {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

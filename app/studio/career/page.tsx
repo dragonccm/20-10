@@ -280,7 +280,7 @@ function CvBuilder() {
 
   return (
     <div className="cv-workspace space-y-5">
-      <Card className="flex flex-wrap items-center gap-3 p-4">
+      <Card className="cv-import-card flex flex-wrap items-center gap-3 p-4">
         <FileUp className="h-5 w-5 shrink-0 text-emerald-600" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-slate-800">Đã có CV sẵn?</p>
