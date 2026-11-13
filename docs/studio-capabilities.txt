@@ -115,3 +115,11 @@ them, so users download their result before leaving the browser session.
 Validated with rendered Word and PowerPoint files, mixed run styles, split
 markers, blank table cells and unchanged binary package parts.
 Bloom favicon: original sprout SVG, served through the Next.js icon route.
+
+Companion persona update (2026-11-13):
+The user's supplied Vietnamese persona is preserved in companion-persona.ts and
+used only for companion conversations. It replaces the generic teacher voice for
+this task. Tone preferences (natural, brief, direct) are explicitly honored.
+Bloom remains transparent about being AI and never claims to be the gift giver.
+Chat/help permissions remain unchanged; generated documents follow their own
+requested register rather than inheriting conversational slang or humor.

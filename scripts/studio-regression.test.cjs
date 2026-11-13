@@ -145,6 +145,22 @@ test('companion chat mode cannot propose actions; help mode stays within support
  assert.equal(companionReply.safeParse({...result,execute:'delete-all'}).success,false)
  assert.equal(companionReply.safeParse({...result,draft:{title:'',text:'abc'}}).success,false)
 })
+test('companion persona honors tone and mode without promoting arbitrary chat data into instructions', () => {
+ const {COMPANION_PERSONA,companionSystemPrompt}=require('../lib/studio/companion-persona.ts')
+ const chat=companionSystemPrompt(JSON.stringify({mode:'chat',tone:'brief',message:'UNTRUSTED_MESSAGE',history:[{text:'UNTRUSTED_HISTORY'}]}))
+ assert.ok(chat.startsWith(COMPANION_PERSONA))
+ assert.ok(chat.includes('thường một đến ba câu'))
+ assert.ok(chat.includes('draft và tool luôn null'))
+ assert.ok(!chat.includes('UNTRUSTED_MESSAGE')&&!chat.includes('UNTRUSTED_HISTORY'))
+ const help=companionSystemPrompt(JSON.stringify({mode:'help',tone:'direct'}))
+ assert.ok(help.includes('Chế độ hiện tại: help'))
+ assert.ok(help.includes('đi thẳng vào điều người dùng cần'))
+ for(const input of ['plain text','null',JSON.stringify({mode:'bypass',tone:'INJECTED_SETTING'})]){
+  const prompt=companionSystemPrompt(input)
+  assert.ok(prompt.includes('Chế độ hiện tại: chat'))
+  assert.ok(!prompt.includes('INJECTED_SETTING'))
+ }
+})
 const knowledge=require('../lib/studio/document-knowledge.ts')
 test('long documents keep every page and character, including the final section',async()=>{
  const parts=Array.from({length:123},(_,i)=>`Page ${i+1}\n`+('Meaningful paragraph about topic '+i+'.\n').repeat(410));parts[122]+='Final unique conclusion: ZEPHYR has 47 participants.'
