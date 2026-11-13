@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 
 export type AiTask =
+  | "template-detect"
+  | "template-fill"
   | "document-cards"
   | "document-extract"
   | "document-answer"

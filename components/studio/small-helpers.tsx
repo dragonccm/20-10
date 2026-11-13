@@ -1,24 +1,21 @@
 "use client"
 import dynamic from "next/dynamic"
 import { FocusTimer } from "./focus-timer"
+const TemplateFiller = dynamic(
+  () => import("./template-filler").then((m) => m.TemplateFiller),
+  { loading: () => <p>Đang mở công cụ điền mẫu…</p> },
+)
 const PhotoHelper = dynamic(
   () => import("./photo-helper").then((m) => m.PhotoHelper),
   { loading: () => <p>Đang mở góc ảnh…</p> },
 )
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { HelpDetails, Button, Card, Input, Label, Select, Textarea } from "./ui"
 import { callAi } from "@/lib/studio/ai"
-import {
-  copyText,
-  downloadFile,
-  readLS,
-  safeFileName,
-} from "@/lib/studio/storage"
+import { copyText, downloadFile, safeFileName } from "@/lib/studio/storage"
 import { emlDraft, renamedFiles } from "@/lib/studio/file-tools"
-import type { CV } from "@/lib/studio/cv-data"
-import { textToHtml } from "@/lib/studio/text"
 const EMAILS = [
   "Xin thông tin",
   "Xin lịch hẹn",
@@ -39,14 +36,17 @@ const EMAILS = [
 ]
 export function SmallHelpers() {
   const [tab, setTab] = useState("email")
-  useEffect(() => {
+  const [templateOpened, setTemplateOpened] = useState(false)
+  useLayoutEffect(() => {
     const requested = new URLSearchParams(location.search).get("task")
     if (
       ["email", "files", "template", "focus", "photos"].includes(
         requested || "",
       )
-    )
+    ) {
       setTab(requested!)
+      if (requested === "template") setTemplateOpened(true)
+    }
   }, [])
   return (
     <div className="space-y-5">
@@ -66,14 +66,17 @@ export function SmallHelpers() {
         {[
           ["email", "Viết email"],
           ["files", "Sửa file"],
-          ["template", "Mẫu Word"],
+          ["template", "Điền mẫu"],
           ["focus", "Tập trung"],
           ["photos", "Chỉnh ảnh"],
         ].map(([id, label]) => (
           <Button
             key={id}
             variant={tab === id ? "primary" : "outline"}
-            onClick={() => setTab(id)}
+            onClick={() => {
+              setTab(id)
+              if (id === "template") setTemplateOpened(true)
+            }}
           >
             {label}
           </Button>
@@ -83,12 +86,15 @@ export function SmallHelpers() {
         <EmailComposer />
       ) : tab === "files" ? (
         <FileHelpers />
-      ) : tab === "template" ? (
-        <WordTemplates />
-      ) : tab === "photos" ? (
+      ) : tab === "template" ? null : tab === "photos" ? (
         <PhotoHelper />
       ) : (
         <FocusTimer />
+      )}
+      {templateOpened && (
+        <div hidden={tab !== "template"}>
+          <TemplateFiller />
+        </div>
       )}
     </div>
   )
@@ -568,267 +574,6 @@ function FileHelpers() {
         <p role="status" className="text-sm">
           {status}
         </p>
-      )}
-    </Card>
-  )
-}
-function WordTemplates() {
-  const [file, setFile] = useState<File | null>(null),
-    [fields, setFields] = useState<string[]>([]),
-    [values, setValues] = useState<Record<string, string>>({}),
-    [busy, setBusy] = useState(false),
-    [paragraphs, setParagraphs] = useState<{ index: number; text: string }[]>(
-      [],
-    ),
-    [replacements, setReplacements] = useState<Record<number, string>>({}),
-    [sourceValues, setSourceValues] = useState<Record<string, string>>({}),
-    [search, setSearch] = useState("")
-  const select = async (f: File) => {
-    setBusy(true)
-    try {
-      const { templateFields, wordParagraphs } = await import(
-        "@/lib/studio/word-template"
-      )
-      const data = new Uint8Array(await f.arrayBuffer()),
-        keys = templateFields(data)
-      setFile(f)
-      setFields(keys)
-      setParagraphs(wordParagraphs(data))
-      setReplacements({})
-      setSourceValues({})
-      setValues(Object.fromEntries(keys.map((k) => [k, ""])))
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
-  const populate = (kind: "writing" | "cv") => {
-    if (kind === "writing") {
-      const docs = readLS<{ id: string; title: string; html: string }[]>(
-          "bloom.writing.docs",
-          [],
-        ),
-        id = readLS("bloom.writing.active", ""),
-        doc = docs.find((d) => d.id === id) || docs[0]
-      if (!doc) return toast.info("Chưa có bài viết được lưu.")
-      const parsed = new DOMParser().parseFromString(doc.html, "text/html")
-      const data = {
-        title: doc.title,
-        tieu_de: doc.title,
-        body: parsed.body.textContent || "",
-        noi_dung: parsed.body.textContent || "",
-      }
-      setSourceValues(data)
-      setValues((v) => ({ ...v, ...data }))
-      return
-    }
-    const cv = readLS<CV | null>("bloom.career.cv", null)
-    if (!cv)
-      return toast.info(
-        "Chưa có hồ sơ CV. Bạn có thể điền ở CV & xin việc trước.",
-      )
-    const data: Record<string, string> = {
-      name: cv.name,
-      ho_ten: cv.name,
-      title: cv.title,
-      email: cv.email,
-      phone: cv.phone,
-      location: cv.location,
-      link: cv.link,
-      summary: cv.summary,
-      skills: cv.skills,
-      education: cv.education
-        .map((e) => `${e.school} · ${e.degree}\n${e.from}–${e.to}\n${e.detail}`)
-        .join("\n\n"),
-      experience: cv.experience
-        .map((e) => `${e.role} · ${e.org}\n${e.from}–${e.to}\n${e.bullets}`)
-        .join("\n\n"),
-      projects: cv.projects.map((p) => p.name + "\n" + p.detail).join("\n\n"),
-      languages: cv.languages.map((l) => l.name + " · " + l.level).join("\n"),
-      certificates: cv.certificates,
-    }
-    setSourceValues(data)
-    setValues((v) => ({
-      ...v,
-      ...Object.fromEntries(
-        Object.entries(data).filter(([k]) => fields.includes(k)),
-      ),
-    }))
-  }
-  const sample = async () => {
-    const { htmlToDocx } = await import("@/lib/studio/word-template")
-    downloadFile(
-      "mau-bao-cao.docx",
-      htmlToDocx(
-        "<h1>{{title}}</h1><p>Tác giả: {{author}}</p><h2>Nội dung</h2><p>{{body}}</p>",
-      ) as BlobPart,
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
-  }
-  const exportFile = async () => {
-    if (!file) return
-    setBusy(true)
-    try {
-      const { fillWordTemplate, fillWordParagraphs } = await import(
-        "@/lib/studio/word-template"
-      )
-      const bytes = fillWordParagraphs(
-        fillWordTemplate(new Uint8Array(await file.arrayBuffer()), values),
-        replacements,
-      )
-      downloadFile(
-        "da-dien-" + file.name,
-        bytes as BlobPart,
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      )
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <Card className="space-y-4 p-5">
-      <h2 className="font-medium">Điền mẫu Word</h2>
-      <p className="text-sm text-slate-500">
-        Chọn mẫu, điền nội dung rồi tải bản mới.
-      </p>
-      <HelpDetails summary="Điền mẫu như thế nào?">
-        <p>
-          Ứng dụng giữ kiểu chữ, bảng, ảnh, lề và header/footer của mẫu. Bạn có
-          thể thay các vùng như {"{{title}}"}, {"{{body}}"} hoặc chọn từng đoạn
-          để điền. Nội dung dài có thể dàn sang trang mới; hãy mở bản xuất để
-          xem lại.
-        </p>
-      </HelpDetails>
-      <div className="flex flex-wrap gap-3">
-        <input
-          aria-label="Tải mẫu Word"
-          type="file"
-          accept=".docx"
-          onChange={(e) => {
-            if (e.target.files?.[0]) select(e.target.files[0])
-          }}
-        />
-        <Button variant="outline" onClick={sample}>
-          Tải mẫu báo cáo thử
-        </Button>
-      </div>
-      {file && (
-        <>
-          <p className="text-sm">
-            Mẫu: {file.name} · {fields.length} vùng điền
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => populate("writing")}>
-              Lấy bài đang viết
-            </Button>
-            <Button variant="outline" onClick={() => populate("cv")}>
-              Lấy thông tin CV đã lưu
-            </Button>
-          </div>
-          <HelpDetails summary="Các vùng điền được hỗ trợ">
-            <p>
-              CV: name, title, email, phone, location, link, summary, education,
-              experience, projects, skills, languages, certificates. Các vùng
-              khác bạn tự điền. Mẫu không có vùng đánh dấu vẫn có thể thay từng
-              đoạn bên dưới.
-            </p>
-          </HelpDetails>
-          <details
-            open={!fields.length}
-            className="rounded-xl border border-violet-100 p-4"
-          >
-            <summary className="cursor-pointer text-sm">
-              Chọn vị trí cần thay trong mẫu ({paragraphs.length} đoạn)
-            </summary>
-            <p className="my-3 text-xs leading-6 text-slate-500">
-              Tích vào một đoạn, chọn dữ liệu đã lấy hoặc tự viết nội dung thay
-              thế. Kiểu chữ của vị trí gốc được giữ; các phần khác không bị viết
-              lại.
-            </p>
-            <Input
-              aria-label="Tìm đoạn trong mẫu Word"
-              placeholder="Tìm đoạn cần thay…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <div className="mt-3 max-h-[650px] space-y-3 overflow-y-auto">
-              {paragraphs
-                .filter((p) =>
-                  p.text.toLowerCase().includes(search.toLowerCase()),
-                )
-                .map((p) => (
-                  <div key={p.index} className="rounded-xl bg-slate-50 p-3">
-                    <label className="flex gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={Object.hasOwn(replacements, p.index)}
-                        onChange={(e) =>
-                          setReplacements((prev) => {
-                            const next = { ...prev }
-                            if (e.target.checked) next[p.index] = p.text
-                            else delete next[p.index]
-                            return next
-                          })
-                        }
-                      />
-                      <span className="whitespace-pre-wrap">{p.text}</span>
-                    </label>
-                    {Object.hasOwn(replacements, p.index) && (
-                      <div className="mt-3 space-y-2">
-                        <Select
-                          aria-label={`Dữ liệu thay đoạn ${p.index}`}
-                          value=""
-                          onValueChange={(value) => {
-                            if (value)
-                              setReplacements((prev) => ({
-                                ...prev,
-                                [p.index]: sourceValues[value],
-                              }))
-                          }}
-                        >
-                          <option value="">Chọn dữ liệu đã lấy (nếu có)</option>
-                          {Object.keys(sourceValues).map((k) => (
-                            <option key={k} value={k}>
-                              {k}
-                            </option>
-                          ))}
-                        </Select>
-                        <Textarea
-                          aria-label={`Nội dung thay đoạn ${p.index}`}
-                          rows={3}
-                          value={replacements[p.index]}
-                          onChange={(e) =>
-                            setReplacements((prev) => ({
-                              ...prev,
-                              [p.index]: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </details>
-          {fields.map((key) => (
-            <label key={key} className="block">
-              <Label>{key}</Label>
-              <Textarea
-                rows={key === "body" || key === "experience" ? 8 : 3}
-                value={values[key] || ""}
-                onChange={(e) =>
-                  setValues((v) => ({ ...v, [key]: e.target.value }))
-                }
-              />
-            </label>
-          ))}
-          <Button loading={busy} onClick={exportFile}>
-            Tải Word đã điền
-          </Button>
-        </>
       )}
     </Card>
   )

@@ -197,3 +197,54 @@ test('a generated design opens as the active design only after successful storag
  writes.length=0;idb.idbSet=async()=>false;storage.writeLS=(k,v)=>{writes.push([k,v]);return false};assert.equal(await require('../lib/studio/handoff.ts').addDesigns([{id:'not-saved'}]),false);assert.ok(!writes.some(([k])=>k==='bloom.creative.active'))
  }finally{idb.idbGet=old.get;idb.idbSet=old.set;storage.readLS=old.read;storage.writeLS=old.write}
 })
+
+test('Office template replacement preserves every untouched package part and run style',()=>{
+ const {zipSync,unzipSync,strToU8,strFromU8}=require('fflate'),{scanTemplate,applyTemplate}=require('../lib/studio/template-fill.ts')
+ const fixture=(kind,xml)=>zipSync({'[Content_Types].xml':strToU8('<Types/>'),[kind==='docx'?'word/document.xml':'ppt/slides/slide1.xml']:strToU8(xml),'word/styles.xml':strToU8('<styles>EXACT FONT AND TABLE SETTINGS</styles>'),'media/photo.png':new Uint8Array([1,2,3,4])})
+ const word='<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:b/><w:color w:val="AF4822"/></w:rPr><w:t>Tác giả: {{na</w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>me}} · {{date}}</w:t></w:r></w:p><w:sectPr><w:pgMar w:top="1234"/></w:sectPr></w:body></w:document>'
+ const bytes=fixture('docx',word),model=scanTemplate(bytes)
+ assert.equal(model.slots.length,2)
+ const out=applyTemplate(bytes,model.slots,{[model.slots[0].id]:'Thúy & Ngân',[model.slots[1].id]:'13/11/2026'}),before=unzipSync(bytes),after=unzipSync(out.bytes)
+ for(const key of Object.keys(before).filter(k=>k!=='word/document.xml'))assert.deepEqual(after[key],before[key],key)
+ const xml=strFromU8(after['word/document.xml'])
+ assert.ok(xml.includes('Thúy &amp; Ngân'));assert.ok(xml.includes('13/11/2026'));assert.ok(xml.includes('<w:b/><w:color w:val="AF4822"/>'));assert.ok(xml.includes('<w:pgMar w:top="1234"/>'));assert.ok(xml.includes('<w:i/>'));assert.equal(out.audit.replacements,2)
+ assert.deepEqual(applyTemplate(bytes,model.slots,{}).bytes,bytes)
+ assert.throws(()=>applyTemplate(bytes,[{...model.slots[0],original:'invented'}],{[model.slots[0].id]:'BAD'}))
+ const power='<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:spTree><a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="2800" b="1"/><a:t>{{title}}</a:t></a:r></a:p></p:spTree></p:sld>'
+ const ppt=fixture('pptx',power),pm=scanTemplate(ppt),filled=applyTemplate(ppt,pm.slots,{[pm.slots[0].id]:'Dòng một\nDòng hai'}),px=strFromU8(unzipSync(filled.bytes)['ppt/slides/slide1.xml'])
+ assert.ok(px.includes('<a:br/>'));assert.equal((px.match(/sz="2800"/g)||[]).length,2);assert.ok(px.includes('algn="ctr"'))
+ assert.deepEqual(unzipSync(filled.bytes)['media/photo.png'],unzipSync(ppt)['media/photo.png'])
+})
+test('template proposals use exact unique quotes, reject overlaps and require evidence from uploaded content',()=>{
+ const {suggestedSlots,groundedValues,sourceChunks,templateBatches}=require('../lib/studio/template-fill.ts')
+ const model={kind:'docx',slots:[],blocks:[{id:'b1',text:'Họ tên: Nguyễn Văn A. Ngày: 01/01/2000.',protected:false}]}
+ const slots=suggestedSlots(model,[{blockId:'b1',quote:'Nguyễn Văn A',label:'Họ tên'},{blockId:'b1',quote:'Văn A',label:'Trùng vùng'},{blockId:'invalid',quote:'Tên',label:'BAD'}])
+ assert.equal(slots.length,1)
+ assert.equal(groundedValues([{id:slots[0].id,value:'Mai',quote:'Người viết là Mai'},{id:slots[0].id,value:'Long',quote:'Bịa nội dung'}],slots,'Người viết là Mai.').length,1)
+ const content='A'.repeat(12500)+'\nCONCLUSION: 47 people.';const chunks=sourceChunks(content)
+ assert.ok(chunks.some(s=>s.includes('CONCLUSION: 47 people.')));assert.ok(chunks.every(s=>s.length<=12000))
+ const batches=templateBatches(Array.from({length:95},(_,i)=>({id:i,text:'a'.repeat(400)})))
+ assert.ok(batches.every(b=>JSON.stringify(b).length<=17000&&b.length<=30));assert.equal(batches.flat().length,95)
+})
+test('blank table cells can be filled without replacing table or paragraph properties',()=>{
+ const {zipSync,unzipSync,strToU8,strFromU8}=require('fflate'),{scanTemplate,applyTemplate}=require('../lib/studio/template-fill.ts')
+ const xml='<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:tbl><w:tblPr><w:tblW w:w="8000"/></w:tblPr><w:tr><w:tc><w:p><w:r><w:t>Họ tên:</w:t></w:r></w:p></w:tc><w:tc><w:p/></w:tc></w:tr><w:tr><w:tc><w:p><w:r><w:t>Lớp:</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:i/></w:rPr></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>'
+ const data=zipSync({'[Content_Types].xml':strToU8('<Types/>'),'word/document.xml':strToU8(xml)}),model=scanTemplate(data)
+ assert.equal(model.slots.length,2);assert.equal(model.slots[0].label,'Họ tên');assert.equal(model.slots[1].label,'Lớp')
+ const result=applyTemplate(data,model.slots,{[model.slots[0].id]:'Mai Anh',[model.slots[1].id]:'Khoa học 01'})
+ const output=strFromU8(unzipSync(result.bytes)['word/document.xml'])
+ assert.ok(output.includes('<w:tblW w:w="8000"/>'));assert.ok(output.includes('<w:i/>'));assert.ok(output.includes('Mai Anh'));assert.ok(output.includes('Khoa học 01'))
+ assert.equal(scanTemplate(result.bytes).blocks.filter(b=>b.text.includes('Mai Anh')).length,1)
+ assert.throws(()=>scanTemplate(zipSync({'[Content_Types].xml':strToU8('<Types/>'),'word/document.xml':strToU8(xml.replace('</w:body>','</w:wrong>'))})))
+})
+test('empty PowerPoint table cells retain end-paragraph font properties on every inserted line',()=>{
+ const {zipSync,unzipSync,strToU8,strFromU8}=require('fflate'),{scanTemplate,applyTemplate}=require('../lib/studio/template-fill.ts')
+ const xml='<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:tbl><a:tr><a:tc><a:p><a:r><a:t>Họ tên:</a:t></a:r></a:p></a:tc><a:tc><a:p><a:pPr algn="ctr"/><a:endParaRPr sz="2200" b="1"/></a:p></a:tc></a:tr></a:tbl></p:sld>'
+ const bytes=zipSync({'[Content_Types].xml':strToU8('<Types/>'),'ppt/slides/slide1.xml':strToU8(xml)}),model=scanTemplate(bytes)
+ assert.equal(model.slots.length,1)
+ const result=applyTemplate(bytes,model.slots,{[model.slots[0].id]:'Mai Anh\nNhóm A'}),output=strFromU8(unzipSync(result.bytes)['ppt/slides/slide1.xml'])
+ assert.equal((output.match(/<a:rPr sz="2200" b="1"\/>/g)||[]).length,2)
+ assert.ok(output.includes('<a:endParaRPr sz="2200" b="1"/>'));assert.ok(output.includes('<a:br/>'))
+ assert.ok(output.indexOf('Mai Anh')<output.indexOf('<a:endParaRPr'))
+ assert.equal(scanTemplate(result.bytes).blocks.find(b=>b.text.includes('Mai Anh')).text,'Mai Anh\nNhóm A')
+})

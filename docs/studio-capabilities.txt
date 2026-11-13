@@ -98,3 +98,20 @@ and flush on page hide/unmount. Preview and editor share one element renderer.
 Original vector still lifes replace repeated mountain placeholders, with aspect-
 correct crops and measured text fitting. Only the current collection is offered;
 older canvas drafts remain in local storage. No Canva assets are redistributed.
+
+Original Office template filling (2026-11-13):
+DOCX and PPTX packages are edited in place at exact text spans. Original styles,
+media, relationships, tables, headers/footers and slide masters are retained.
+Placeholders split across runs, inline text replacements, explicit line breaks,
+and empty table cells are supported. Untouched package entries are byte-identical
+after decompression. This preserves formatting; it does not guarantee identical
+line breaks or pagination when the replacement content has a different length.
+AI detects candidate fields and maps uploaded/pasted content into proposals with
+exact source quotes. The user reviews and applies values before export. Source
+text is processed in bounded batches without silently dropping the end of a file.
+ZIP scanning/export runs in a worker; cancellation leaves the source untouched.
+Drafts stay in memory during client navigation; reload/closing the page clears
+them, so users download their result before leaving the browser session.
+Validated with rendered Word and PowerPoint files, mixed run styles, split
+markers, blank table cells and unchanged binary package parts.
+Bloom favicon: original sprout SVG, served through the Next.js icon route.

@@ -25,6 +25,28 @@ export const citationVerdictSchema = z.object({
   evidence: z.array(evidenceSchema).max(12),
 })
 export const AI_CONTRACTS: Record<string, z.ZodTypeAny> = {
+  "template-detect": z.object({
+    fields: z
+      .array(
+        z.object({
+          blockId: z.string().max(220),
+          quote: z.string().min(1).max(6000),
+          label: z.string().min(1).max(100),
+        }),
+      )
+      .max(80),
+  }),
+  "template-fill": z.object({
+    values: z
+      .array(
+        z.object({
+          id: z.string().max(250),
+          value: z.string().max(20000),
+          quote: z.string().min(4).max(3000),
+        }),
+      )
+      .max(40),
+  }),
   "document-cards": z.object({
     questions: z
       .array(
